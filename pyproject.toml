@@ -1,0 +1,20 @@
+[project]
+name = "zte-h186-dsl-statistics"
+version = "1.0.0"
+description = "Read DSL line statistics from a ZTE H186 modem"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Daniel Ebenhöh" }]
+dependencies = []
+keywords = ["zte", "h186", "dsl", "statistics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+]
