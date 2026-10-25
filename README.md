@@ -1,110 +1,138 @@
 # ZTE H186 Home Assistant Integration (HACS)
 
+<p align="center">
+  <img src="images/icon.png" alt="ZTE H186 DSL Modem" width="240">
+</p>
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/Ebenhoeh80/zte-h186)](https://github.com/Ebenhoeh80/zte-h186/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 [![Quality Scale: Bronze](https://img.shields.io/badge/Quality%20Scale-Bronze-brown.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
+[![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internationalization-i18n)
 
-Eine native, asynchrone Home-Assistant-Integration für das **ZTE H186 DSL-Modem**. Liest alle relevanten DSL-Leitungsparameter (Sync-Raten, Störabstand/SNR, Dämpfung, CRC/FEC-Fehler, Trägerprofil, Showtime) direkt über die lokale Weboberfläche des Modems aus.
-
----
-
-## 🚀 Funktionen
-
-- **UI-Konfiguration (Config Flow)**: Einfache Einrichtung über die Home-Assistant-Benutzeroberfläche (*Einstellungen -> Geräte & Dienste -> Integration hinzufügen*).
-- **Kein YAML erforderlich**: Vollständige Verwaltung über die GUI mit automatischer Geräte- und Entitätserstellung.
-- **Reconfigure Flow**: IP-Adresse oder Passwort nachträglich ändern, ohne Entitäten oder Verlaufsdaten zu verlieren.
-- **Options Flow**: Aktualisierungsintervall (Polling) flexibel einstellbar (15 bis 600 Sekunden, Standard: 60s).
-- **26 DSL-Sensoren**:
-  - **Bandbreite & Sync**: Downstream- & Upstream-Sync-Rate, maximale Leitungskapazität (Attainable Rate).
-  - **Signalqualität**: Downstream- & Upstream-SNR-Marge (dB), Leitungsdämpfung (dB), Ausgangsleistung (dBm).
-  - **Physikalische Parameter**: Profil (z.B. 17a, 35b Supervectoring), Modulationsstandard (VDSL2), Datenpfad (Interleaved / Fast).
-  - **Laufzeit**: DSL-Showtime (Link-Uptime in Sekunden).
-  - **Übertragungsqualität & Latenz**: Interleave-Tiefe, Interleave-Verzögerung (ms), Impulsstörungsschutz (INP in Symbolen).
-  - **Fehlerzähler**: Downstream-/Upstream-CRC-Fehler, Downstream-/Upstream-FEC-Fehler.
-- **Binärsensoren**:
-  - `dsl_link`: DSL-Verbindungsstatus (Konnektivität aktiv / getrennt).
-  - `line_noise_warning`: Problem-Erkennung bei kritisch niedrigem SNR (< 6 dB).
-- **Aktionen & Buttons**:
-  - `refresh_stats`: Sofortiges Neuladen der DSL-Werte per Knopfdruck oder Automation.
-- **Vollständige Diagnostik**: Export von anonymisierten Diagnosedaten für Fehleranalysen.
-- **Zweisprachig**: Vollständige deutsche und englische Übersetzungen.
+An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**. Reads real-time DSL line telemetry (sync rates, SNR margins, line attenuation, CRC/FEC error counters, transmission profile, and showtime uptime) directly from the modem's local web interface.
 
 ---
 
-## 📦 Installation über HACS
+## 🚀 Features
 
-### Methode 1: HACS Custom Repository (Empfohlen)
+- **UI-Based Setup (Config Flow)**: Fast configuration directly through the Home Assistant user interface (*Settings > Devices & Services > Add Integration*). No YAML required.
+- **Reconfigure Flow**: Seamlessly update modem IP address, hostname, or admin password without losing entity IDs, dashboards, or long-term history.
+- **Options Flow**: Customizable polling interval from 15 to 600 seconds (default: 60 seconds).
+- **Session Caching & Efficiency**: Keeps the authenticated session active and automatically recovers from session timeouts, preventing unnecessary load on the modem.
+- **Full Internationalization (i18n)**: Automatically renders in English, German, French, or Spanish based on your Home Assistant profile language.
+- **27 Comprehensive Sensors**:
+  - **Bandwidth & Sync**: Downstream & Upstream Sync Rate (Mbit/s), Maximum Attainable Capacity (Mbit/s), Line Capacity Utilization (%).
+  - **Signal Integrity**: Downstream & Upstream Signal-to-Noise Ratio (SNR Margin in dB), Line Attenuation (dB), Output Transmit Power (dBm).
+  - **Line Framing & Latency**: DSL Profile (e.g., 17a, 35b Supervectoring), Modulation Standard (VDSL2), Data Path Mode (Interleaved/Fast), Interleave Depth & Delay (ms), Impulse Noise Protection (INP in symbols).
+  - **Uptime & Errors**: Link Showtime duration, Downstream & Upstream uncorrectable CRC errors, Downstream & Upstream corrected FEC bit errors.
+- **Binary Sensors**:
+  - `dsl_link`: Physical DSL link connectivity status.
+  - `line_noise_warning`: Problem indicator triggered when SNR margin drops below 6.0 dB.
+- **Action Button**:
+  - `refresh_stats`: Trigger an immediate modem poll manually or from automations.
+- **Full Diagnostics**: Export sanitized diagnostic logs (passwords automatically redacted) with one click from the device page.
 
-1. Öffne **Home Assistant**.
-2. Navigiere zu **HACS** > **Integrationen**.
-3. Klicke oben rechts auf das Drei-Punkte-Menü und wähle **Benutzerdefinierte Repositories**.
-4. Trage die Repository-URL ein:
+---
+
+## 📦 Installation via HACS
+
+### Method 1: HACS Custom Repository (Recommended)
+
+1. Open **Home Assistant**.
+2. Navigate to **HACS** > **Integrations**.
+3. Click the three-dot menu (⋮) in the top-right corner and select **Custom repositories**.
+4. Enter the repository URL:
    ```text
    https://github.com/Ebenhoeh80/zte-h186
    ```
-5. Wähle als Typ **Integration** und klicke auf **Hinzufügen**.
-6. Suche nach **ZTE H186 DSL Modem** und klicke auf **Herunterladen**.
-7. Starte Home Assistant neu.
+5. Select Type: **Integration** and click **Add**.
+6. Find **ZTE H186 DSL Modem** and click **Download**.
+7. Restart Home Assistant.
 
-### Methode 2: Manuelle Installation
+### Method 2: Manual Installation
 
-1. Lade das Repository als ZIP herunter.
-2. Kopiere den Ordner `custom_components/zte_h186` in dein Home-Assistant-Verzeichnis unter `/config/custom_components/zte_h186`.
-3. Starte Home Assistant neu.
-
----
-
-## ⚙️ Konfiguration
-
-1. Gehe in Home Assistant zu **Einstellungen** > **Geräte & Dienste**.
-2. Klicke unten rechts auf **Integration hinzufügen**.
-3. Suche nach **ZTE H186 DSL Modem**.
-4. Gib folgende Daten ein:
-   - **IP-Adresse oder Hostname**: z.B. `192.168.1.1` (oder die Management-IP deines Modems)
-   - **Benutzername**: `admin` (Standard)
-   - **Passwort**: Das Web-Passwort deines ZTE H186 Modems
-5. Klicke auf **Absenden**. Die Integration prüft die Verbindung und richtet das Gerät mit allen Sensoren ein.
+1. Download the latest `zte-h186-v1.0.0.zip` release archive.
+2. Copy the folder `custom_components/zte_h186` into your Home Assistant directory under:
+   ```text
+   /config/custom_components/zte_h186
+   ```
+3. Restart Home Assistant.
 
 ---
 
-## 📊 Entitätsübersicht
+## ⚙️ Configuration
 
-| Entität | Typ | Einheit | Beschreibung |
+1. In Home Assistant, go to **Settings** > **Devices & Services**.
+2. Click **Add Integration** in the bottom-right corner.
+3. Search for **ZTE H186 DSL Modem**.
+4. Provide your connection details:
+   - **IP Address or Hostname**: e.g., `192.168.1.1` (or your modem's management IP)
+   - **Username**: `admin` (default)
+   - **Password**: Your modem's web administration password
+5. Click **Submit**. Home Assistant will validate the connection and automatically create the device and all entities.
+
+---
+
+## 📊 Entity Directory
+
+| Entity ID Pattern | Type | Unit | Description |
 |---|---|---|---|
-| `sensor.zte_h186_<ip>_downstream_sync` | Sensor | Mbit/s | Aktuelle Downstream-Synchronisationsrate |
-| `sensor.zte_h186_<ip>_upstream_sync` | Sensor | Mbit/s | Aktuelle Upstream-Synchronisationsrate |
-| `sensor.zte_h186_<ip>_downstream_max` | Sensor | Mbit/s | Maximal erreichbare Downstream-Leitungskapazität |
-| `sensor.zte_h186_<ip>_upstream_max` | Sensor | Mbit/s | Maximal erreichbare Upstream-Leitungskapazität |
-| `sensor.zte_h186_<ip>_downstream_snr` | Sensor | dB | Signal-Rausch-Verhältnis (Störabstand) im Downstream |
-| `sensor.zte_h186_<ip>_upstream_snr` | Sensor | dB | Signal-Rausch-Verhältnis (Störabstand) im Upstream |
-| `sensor.zte_h186_<ip>_downstream_attenuation`| Sensor | dB | Leitungsdämpfung im Downstream |
-| `sensor.zte_h186_<ip>_upstream_attenuation`  | Sensor | dB | Leitungsdämpfung im Upstream |
-| `sensor.zte_h186_<ip>_downstream_power`      | Sensor (Diagnostik) | dBm | Sendeleistung im Downstream |
-| `sensor.zte_h186_<ip>_upstream_power`        | Sensor (Diagnostik) | dBm | Sendeleistung im Upstream |
-| `sensor.zte_h186_<ip>_profile`               | Sensor | - | DSL-Trägerprofil (z.B. 17a, 35b) |
-| `sensor.zte_h186_<ip>_modulation`            | Sensor | - | Modulation (z.B. VDSL2) |
-| `sensor.zte_h186_<ip>_dsl_status`            | Sensor | - | DSL-Link-Status (z.B. Up) |
-| `sensor.zte_h186_<ip>_showtime`              | Sensor (Diagnostik) | s | Unterbrechungsfreie Verbindungsdauer |
-| `sensor.zte_h186_<ip>_downstream_crc`        | Sensor (Diagnostik) | Fehler | Unkorrigierbare CRC-Fehler Downstream |
-| `sensor.zte_h186_<ip>_upstream_crc`          | Sensor (Diagnostik) | Fehler | Unkorrigierbare CRC-Fehler Upstream |
-| `sensor.zte_h186_<ip>_downstream_fec`        | Sensor (Diagnostik) | Fehler | Korrigierte FEC-Bitfehler Downstream |
-| `sensor.zte_h186_<ip>_upstream_fec`          | Sensor (Diagnostik) | Fehler | Korrigierte FEC-Bitfehler Upstream |
-| `binary_sensor.zte_h186_<ip>_dsl_link`       | Binärsensor | - | Zeigt an, ob die DSL-Verbindung steht |
-| `binary_sensor.zte_h186_<ip>_line_noise_warning` | Binärsensor | - | Warnt bei SNR < 6 dB |
-| `button.zte_h186_<ip>_refresh_stats`         | Button | - | Löst sofortigen Messdatenabruf aus |
+| `sensor.zte_h186_<ip>_downstream_sync` | Sensor | Mbit/s | Current downstream sync rate |
+| `sensor.zte_h186_<ip>_upstream_sync` | Sensor | Mbit/s | Current upstream sync rate |
+| `sensor.zte_h186_<ip>_downstream_max` | Sensor | Mbit/s | Maximum attainable downstream rate |
+| `sensor.zte_h186_<ip>_upstream_max` | Sensor | Mbit/s | Maximum attainable upstream rate |
+| `sensor.zte_h186_<ip>_downstream_capacity_ratio` | Sensor (Diag) | % | Downstream sync / capacity ratio |
+| `sensor.zte_h186_<ip>_downstream_snr` | Sensor | dB | Downstream SNR noise margin |
+| `sensor.zte_h186_<ip>_upstream_snr` | Sensor | dB | Upstream SNR noise margin |
+| `sensor.zte_h186_<ip>_downstream_attenuation` | Sensor | dB | Downstream line attenuation |
+| `sensor.zte_h186_<ip>_upstream_attenuation` | Sensor | dB | Upstream line attenuation |
+| `sensor.zte_h186_<ip>_downstream_power` | Sensor (Diag) | dBm | Downstream transmit power |
+| `sensor.zte_h186_<ip>_upstream_power` | Sensor (Diag) | dBm | Upstream transmit power |
+| `sensor.zte_h186_<ip>_profile` | Sensor | - | DSL carrier profile (e.g., 17a, 35b) |
+| `sensor.zte_h186_<ip>_modulation` | Sensor | - | Modulation standard (e.g., VDSL2) |
+| `sensor.zte_h186_<ip>_dsl_status` | Sensor | - | DSL link status (e.g., Up) |
+| `sensor.zte_h186_<ip>_showtime` | Sensor (Diag) | s | Continuous Showtime uptime |
+| `sensor.zte_h186_<ip>_downstream_crc` | Sensor (Diag) | errors | Uncorrected downstream CRC errors |
+| `sensor.zte_h186_<ip>_upstream_crc` | Sensor (Diag) | errors | Uncorrected upstream CRC errors |
+| `sensor.zte_h186_<ip>_downstream_fec` | Sensor (Diag) | errors | Corrected downstream FEC errors |
+| `sensor.zte_h186_<ip>_upstream_fec` | Sensor (Diag) | errors | Corrected upstream FEC errors |
+| `binary_sensor.zte_h186_<ip>_dsl_link` | Binary Sensor | - | Active physical link connectivity |
+| `binary_sensor.zte_h186_<ip>_line_noise_warning` | Binary Sensor | - | Warning triggered when SNR < 6.0 dB |
+| `button.zte_h186_<ip>_refresh_stats` | Button | - | Immediate telemetry poll trigger |
+
+*Note: Technical framing metrics (`interleave_depth`, `interleave_delay`, `inp`, `data_path`, `link_encapsulation`) are organized under the Diagnostic entity category to maintain a clean default dashboard.*
 
 ---
 
-## 🔒 Sicherheit & Technische Details
+## 🌐 Internationalization (i18n)
 
-- **Sitzungserhaltung & Effizienz**: Das Modem verwendet eine mehrstufige Challenge-Response-Authentifizierung (Session-Token, Login-Token, SHA-256-Passworthash und SID-Cookie). Der asynchrone Client (`aiohttp`) hält die Sitzung aufrecht und loggt sich nur bei Session-Timeout neu ein, um das Modem zu schonen.
-- **Passwortschutz**: Passwörter werden niemals im Klartext in Logs ausgegeben. In Diagnosedaten wird das Passwort automatisch unkenntlich gemacht (`REDACTED`).
-- **Laufzeit-Architektur**: Verwendet `DataUpdateCoordinator` und Home Assistant `ConfigEntry` Runtime Data.
+The integration natively supports 4 languages:
+- 🇬🇧 **English (`en`)** – Canonical source language
+- 🇩🇪 **German (`de`)** – Technisch präzise Lokalisierung
+- 🇫🇷 **French (`fr`)** – Traduction technique complète
+- 🇪🇸 **Spanish (`es`)** – Localización técnica en español
+
+Translations automatically apply to:
+- Config flow & reconfigure dialogs
+- Options flow dialogs
+- Error and abort messages
+- All 27 sensor names and descriptions
+- Diagnostic attributes
+
+To contribute additional translations, please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-## 📄 Lizenz
+## 🔒 Security & Architecture
 
-Dieses Projekt ist unter der GNU General Public License v3.0 lizenziert – siehe [LICENSE](LICENSE).
+- **Token Challenge Handshake**: Implements the authentic 5-step ZTE handshake: JavaScript `_sessionTmpToken` hex-decode, numeric challenge token retrieval, `SHA-256(password + challenge)` POST, `SID` session cookie retention, and session priming.
+- **Credential Protection**: Passwords are never logged in plain text. Diagnostics downloads automatically redact all credential fields.
+- **Runtime Data**: Follows modern Home Assistant architecture using `entry.runtime_data = coordinator`.
+
+---
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0 – see [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.

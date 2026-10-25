@@ -39,6 +39,7 @@ export default function App() {
   const [stats, setStats] = useState<ModemStatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [lang, setLang] = useState<'en' | 'de' | 'fr' | 'es'>('en');
 
   // Settings & Demo State
   const [demoMode, setDemoMode] = useState<boolean>(true);
@@ -148,8 +149,8 @@ export default function App() {
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Network className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center shadow-lg shadow-sky-500/20 border border-slate-700/80 overflow-hidden">
+              <img src="/icon.png" alt="ZTE H186" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -169,6 +170,38 @@ export default function App() {
               <span className="text-slate-300 font-medium">
                 {demoMode ? `Simulationsmodus (${preset})` : `Modem: ${host}`}
               </span>
+            </div>
+
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60 text-xs font-semibold">
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2 py-0.5 rounded transition ${lang === 'en' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                title="English"
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLang('de')}
+                className={`px-2 py-0.5 rounded transition ${lang === 'de' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                title="Deutsch"
+              >
+                DE
+              </button>
+              <button
+                onClick={() => setLang('fr')}
+                className={`px-2 py-0.5 rounded transition ${lang === 'fr' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                title="Français"
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLang('es')}
+                className={`px-2 py-0.5 rounded transition ${lang === 'es' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                title="Español"
+              >
+                ES
+              </button>
             </div>
 
             {/* Quick Demo Switcher */}
@@ -265,6 +298,31 @@ export default function App() {
         {/* ----------------- TAB: DASHBOARD ----------------- */}
         {activeTab === 'dashboard' && dsl && (
           <div className="space-y-6">
+            {/* Modem Hardware Hero Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-sky-950/40 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-16 rounded-xl bg-white/10 p-1 flex items-center justify-center border border-slate-700/60 overflow-hidden shadow-md">
+                  <img src="/icon.png" alt="ZTE H186 DSL NT Modem" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-white">ZTE H186 DSL NT</h2>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      Online · {host}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Modem Hardware: ZTE H186 · VDSL2 Supervectoring Terminal · 27 Active Entities
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-3 py-1.5 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700 font-mono">
+                  Profile {dsl.profile} ({dsl.modulation})
+                </span>
+              </div>
+            </div>
+
             {/* Quick Line Status Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3.5">

@@ -12,8 +12,10 @@ def create_zip():
     zip_path = public_dir / "zte-h186-v1.0.0.zip"
 
     files_to_include = [
+        "icon.png",
         "hacs.json",
         "README.md",
+        "CONTRIBUTING.md",
         "CHANGELOG.md",
         "LICENSE",
         "requirements.txt",
@@ -25,6 +27,7 @@ def create_zip():
     dirs_to_include = [
         "custom_components/zte_h186",
         "images",
+        ".github",
     ]
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:

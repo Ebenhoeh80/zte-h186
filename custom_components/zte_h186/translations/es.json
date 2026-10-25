@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar módem ZTE H186",
+        "description": "Introduzca la dirección IP y las credenciales de la interfaz web de su módem DSL ZTE H186.",
+        "data": {
+          "host": "Dirección IP o nombre de host",
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurar módem ZTE H186",
+        "description": "Actualice los ajustes de conexión de su módem ZTE H186.",
+        "data": {
+          "host": "Dirección IP o nombre de host",
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Error al conectar con el módem. Verifique la dirección IP y la accesibilidad de red.",
+      "invalid_auth": "Nombre de usuario o contraseña no válidos.",
+      "unknown": "Ocurrió un error inesperado durante la comunicación."
+    },
+    "abort": {
+      "already_configured": "Este módem ZTE H186 ya está configurado.",
+      "reconfigure_successful": "La reconfiguración se completó con éxito."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de ZTE H186",
+        "description": "Configure el intervalo de actualización de las estadísticas de la línea DSL.",
+        "data": {
+          "scan_interval": "Intervalo de actualización (segundos)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "downstream_sync": { "name": "Velocidad de sincronización de bajada" },
+      "upstream_sync": { "name": "Velocidad de sincronización de subida" },
+      "downstream_max": { "name": "Capacidad máxima alcanzable de bajada" },
+      "upstream_max": { "name": "Capacidad máxima alcanzable de subida" },
+      "downstream_capacity_ratio": { "name": "Utilización de capacidad de línea de bajada" },
+      "downstream_snr": { "name": "Margen de ruido de bajada (SNR)" },
+      "upstream_snr": { "name": "Margen de ruido de subida (SNR)" },
+      "downstream_attenuation": { "name": "Atenuación de bajada" },
+      "upstream_attenuation": { "name": "Atenuación de subida" },
+      "downstream_power": { "name": "Potencia de salida de bajada" },
+      "upstream_power": { "name": "Potencia de salida de subida" },
+      "profile": { "name": "Perfil DSL" },
+      "modulation": { "name": "Estándar de modulación" },
+      "dsl_status": { "name": "Estado DSL" },
+      "data_path": { "name": "Modo de ruta de datos" },
+      "link_encapsulation": { "name": "Encapsulación del enlace" },
+      "showtime": { "name": "Tiempo de actividad DSL (Showtime)" },
+      "downstream_interleave_depth": { "name": "Profundidad de entrelazado de bajada" },
+      "upstream_interleave_depth": { "name": "Profundidad de entrelazado de subida" },
+      "downstream_interleave_delay": { "name": "Retardo de entrelazado de bajada" },
+      "upstream_interleave_delay": { "name": "Retardo de entrelazado de subida" },
+      "downstream_inp": { "name": "Protección contra ruido impulsivo de bajada (INP)" },
+      "upstream_inp": { "name": "Protección contra ruido impulsivo de subida (INP)" },
+      "downstream_crc": { "name": "Errores CRC de bajada" },
+      "upstream_crc": { "name": "Errores CRC de subida" },
+      "downstream_fec": { "name": "Errores FEC de bajada" },
+      "upstream_fec": { "name": "Errores FEC de subida" }
+    },
+    "binary_sensor": {
+      "dsl_link": { "name": "Línea DSL conectada" },
+      "line_noise_warning": { "name": "Alerta de ruido en la línea (SNR bajo)" }
+    },
+    "button": {
+      "refresh_stats": { "name": "Actualizar estadísticas DSL ahora" }
+    }
+  }
+}

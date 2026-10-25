@@ -396,10 +396,13 @@ app.get('/api/hacs/files', (_req: Request, res: Response) => {
     { path: 'custom_components/zte_h186/button.py', description: 'Action button for immediate manual refresh' },
     { path: 'custom_components/zte_h186/diagnostics.py', description: 'Diagnostics export with credentials redaction' },
     { path: 'custom_components/zte_h186/strings.json', description: 'Base translations and UI labels' },
-    { path: 'custom_components/zte_h186/translations/en.json', description: 'English language strings' },
+    { path: 'custom_components/zte_h186/translations/en.json', description: 'English language strings (Canonical)' },
     { path: 'custom_components/zte_h186/translations/de.json', description: 'German language strings' },
+    { path: 'custom_components/zte_h186/translations/fr.json', description: 'French language strings' },
+    { path: 'custom_components/zte_h186/translations/es.json', description: 'Spanish language strings' },
     { path: 'hacs.json', description: 'HACS repository configuration file' },
     { path: 'README.md', description: 'Comprehensive documentation and installation guide' },
+    { path: 'CONTRIBUTING.md', description: 'Contribution and translation guidelines' },
     { path: 'CHANGELOG.md', description: 'Integration changelog and version history' },
   ];
 

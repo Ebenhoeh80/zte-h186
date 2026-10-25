@@ -1,0 +1,24 @@
+name: Feature Request
+description: Suggest an idea or enhancement for the ZTE H186 integration
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for suggesting a feature or improvement!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: Describe what problem this feature solves.
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the proposed solution
+      description: Explain how you envision the feature working.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you have considered.

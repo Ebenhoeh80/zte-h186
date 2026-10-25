@@ -1,0 +1,39 @@
+name: Bug Report
+description: Report an issue or unexpected behavior in the ZTE H186 integration
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for reporting an issue! Please provide as much context as possible.
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      placeholder: e.g. 2026.10.2
+    validations:
+      required: true
+  - type: input
+    id: integration_version
+    attributes:
+      label: Integration Version
+      placeholder: e.g. v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: router_model
+    attributes:
+      label: Modem / Firmware Version
+      placeholder: e.g. ZTE H186 (V1.0.0P1T1)
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Problem
+      description: Explain what happened and what was expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Home Assistant Logs / Diagnostics
+      description: Paste relevant log output. Password data is automatically redacted.
+      render: text
