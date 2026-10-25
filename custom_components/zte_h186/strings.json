@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ZTE H186 Modem",
+        "description": "Enter the IP address and web credentials for your ZTE H186 DSL modem.",
+        "data": {
+          "host": "IP Address or Hostname",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure ZTE H186 Modem",
+        "description": "Update the connection settings for your ZTE H186 modem.",
+        "data": {
+          "host": "IP Address or Hostname",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the modem. Verify the IP address and network reachability.",
+      "invalid_auth": "Invalid username or password.",
+      "unknown": "Unexpected error occurred during communication."
+    },
+    "abort": {
+      "already_configured": "This ZTE H186 modem is already configured.",
+      "reconfigure_successful": "Reconfiguration was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ZTE H186 Options",
+        "description": "Configure the polling interval for DSL line statistics.",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "downstream_sync": { "name": "Downstream Sync Rate" },
+      "upstream_sync": { "name": "Upstream Sync Rate" },
+      "downstream_max": { "name": "Downstream Attainable Rate" },
+      "upstream_max": { "name": "Upstream Attainable Rate" },
+      "downstream_capacity_ratio": { "name": "Downstream Line Capacity Utilization" },
+      "downstream_snr": { "name": "Downstream SNR Margin" },
+      "upstream_snr": { "name": "Upstream SNR Margin" },
+      "downstream_attenuation": { "name": "Downstream Attenuation" },
+      "upstream_attenuation": { "name": "Upstream Attenuation" },
+      "downstream_power": { "name": "Downstream Power" },
+      "upstream_power": { "name": "Upstream Power" },
+      "profile": { "name": "DSL Profile" },
+      "modulation": { "name": "Modulation Standard" },
+      "dsl_status": { "name": "DSL Status" },
+      "data_path": { "name": "Data Path Mode" },
+      "link_encapsulation": { "name": "Link Encapsulation" },
+      "showtime": { "name": "DSL Showtime (Uptime)" },
+      "downstream_interleave_depth": { "name": "Downstream Interleave Depth" },
+      "upstream_interleave_depth": { "name": "Upstream Interleave Depth" },
+      "downstream_interleave_delay": { "name": "Downstream Interleave Delay" },
+      "upstream_interleave_delay": { "name": "Upstream Interleave Delay" },
+      "downstream_inp": { "name": "Downstream INP" },
+      "upstream_inp": { "name": "Upstream INP" },
+      "downstream_crc": { "name": "Downstream CRC Errors" },
+      "upstream_crc": { "name": "Upstream CRC Errors" },
+      "downstream_fec": { "name": "Downstream FEC Errors" },
+      "upstream_fec": { "name": "Upstream FEC Errors" }
+    },
+    "binary_sensor": {
+      "dsl_link": { "name": "DSL Line Connected" },
+      "line_noise_warning": { "name": "Line Noise Warning (Low SNR)" }
+    },
+    "button": {
+      "refresh_stats": { "name": "Refresh DSL Stats Now" }
+    }
+  }
+}

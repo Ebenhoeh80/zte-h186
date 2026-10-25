@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ZTE H186 Modem verbinden",
+        "description": "Gib die IP-Adresse und Zugangsdaten der Weboberfläche deines ZTE H186 Modems ein.",
+        "data": {
+          "host": "IP-Adresse oder Hostname",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "ZTE H186 Modem neu konfigurieren",
+        "description": "Aktualisiere die Verbindungseinstellungen für dein ZTE H186 Modem.",
+        "data": {
+          "host": "IP-Adresse oder Hostname",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Modem fehlgeschlagen. Bitte IP-Adresse und Erreichbarkeit prüfen.",
+      "invalid_auth": "Ungültiger Benutzername oder Passwort.",
+      "unknown": "Unerwarteter Fehler bei der Kommunikation aufgetreten."
+    },
+    "abort": {
+      "already_configured": "Dieses ZTE H186 Modem ist bereits konfiguriert.",
+      "reconfigure_successful": "Die Neukonfiguration war erfolgreich."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ZTE H186 Optionen",
+        "description": "Abfrageintervall für DSL-Leitungsstatistiken anpassen.",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "downstream_sync": { "name": "Downstream Sync-Rate" },
+      "upstream_sync": { "name": "Upstream Sync-Rate" },
+      "downstream_max": { "name": "Downstream Leitungskapazität (Max)" },
+      "upstream_max": { "name": "Upstream Leitungskapazität (Max)" },
+      "downstream_capacity_ratio": { "name": "Downstream Leitungskapazität-Auslastung" },
+      "downstream_snr": { "name": "Downstream Störabstandsmarge (SNR)" },
+      "upstream_snr": { "name": "Upstream Störabstandsmarge (SNR)" },
+      "downstream_attenuation": { "name": "Downstream Leitungsdämpfung" },
+      "upstream_attenuation": { "name": "Upstream Leitungsdämpfung" },
+      "downstream_power": { "name": "Downstream Ausgangsleistung" },
+      "upstream_power": { "name": "Upstream Ausgangsleistung" },
+      "profile": { "name": "DSL-Profil" },
+      "modulation": { "name": "Modulationsstandard" },
+      "dsl_status": { "name": "DSL-Status" },
+      "data_path": { "name": "Datenpfad (Fast/Interleaved)" },
+      "link_encapsulation": { "name": "Link-Kapselung" },
+      "showtime": { "name": "DSL-Showtime (Laufzeit)" },
+      "downstream_interleave_depth": { "name": "Downstream Interleave-Tiefe" },
+      "upstream_interleave_depth": { "name": "Upstream Interleave-Tiefe" },
+      "downstream_interleave_delay": { "name": "Downstream Interleave-Verzögerung" },
+      "upstream_interleave_delay": { "name": "Upstream Interleave-Verzögerung" },
+      "downstream_inp": { "name": "Downstream Impulsschutz (INP)" },
+      "upstream_inp": { "name": "Upstream Impulsschutz (INP)" },
+      "downstream_crc": { "name": "Downstream CRC-Fehler" },
+      "upstream_crc": { "name": "Upstream CRC-Fehler" },
+      "downstream_fec": { "name": "Downstream FEC-Fehler" },
+      "upstream_fec": { "name": "Upstream FEC-Fehler" }
+    },
+    "binary_sensor": {
+      "dsl_link": { "name": "DSL-Verbindung aktiv" },
+      "line_noise_warning": { "name": "Leitungsrauschen-Warnung (Niedriges SNR)" }
+    },
+    "button": {
+      "refresh_stats": { "name": "DSL-Werte jetzt abfragen" }
+    }
+  }
+}

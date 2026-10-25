@@ -1,0 +1,7 @@
+{
+  "name": "ZTE H186 DSL Statistics & Monitor",
+  "description": "Authenticated real-time DSL line statistics, diagnostic monitor, and Home Assistant exporter for ZTE H186 modems.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

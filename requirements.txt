@@ -1,0 +1,3 @@
+# Dependencies for Home Assistant ZTE H186 Integration
+# Note: aiohttp is provided by Home Assistant Core
+aiohttp>=3.9.0

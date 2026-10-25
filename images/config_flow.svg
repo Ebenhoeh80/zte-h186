@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400" fill="none">
+  <rect width="600" height="400" rx="12" fill="#0f172a"/>
+  <rect x="50" y="40" width="500" height="320" rx="8" fill="#1e293b" stroke="#334155"/>
+  <text x="80" y="80" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Connect to ZTE H186 Modem</text>
+  <text x="80" y="105" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="13">Enter the IP address and web credentials for your ZTE H186 modem.</text>
+
+  <!-- Input 1 -->
+  <text x="80" y="145" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="13" font-weight="500">IP Address or Hostname</text>
+  <rect x="80" y="155" width="440" height="40" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="95" y="180" fill="#f8fafc" font-family="monospace" font-size="14">192.168.1.1</text>
+
+  <!-- Input 2 -->
+  <text x="80" y="215" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="13" font-weight="500">Username</text>
+  <rect x="80" y="225" width="440" height="40" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="95" y="250" fill="#f8fafc" font-family="monospace" font-size="14">admin</text>
+
+  <!-- Submit button -->
+  <rect x="390" y="295" width="130" height="40" rx="6" fill="#0284c7"/>
+  <text x="430" y="320" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Submit</text>
+</svg>
