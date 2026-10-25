@@ -14,7 +14,6 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 import homeassistant.helpers.config_validation as cv
 
 from .api import (
@@ -54,17 +53,14 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_validate_input(self, user_input: dict[str, Any]) -> dict[str, str]:
         """Validate the user input by connecting to the modem."""
         errors: dict[str, str] = {}
-        session = async_create_clientsession(self.hass, cookie_jar=None)
         client = ZteH186ApiClient(
             host=user_input[CONF_HOST],
             username=user_input.get(CONF_USERNAME, DEFAULT_USERNAME),
             password=user_input[CONF_PASSWORD],
-            session=session,
         )
 
         try:
             await client.async_login()
-            # Fetch a sample to verify status page & XML parsing
             await client.async_get_dsl_stats()
         except ZteH186AuthError:
             errors["base"] = "invalid_auth"
@@ -89,7 +85,6 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
-            # Ensure unique entry per host
             await self.async_set_unique_id(host.lower())
             self._abort_if_unique_id_configured()
 
@@ -105,9 +100,13 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        schema = self.add_suggested_values_to_schema(
+            STEP_USER_DATA_SCHEMA, user_input or {}
+        )
+
         return self.async_show_form(
             step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
+            data_schema=schema,
             errors=errors,
         )
 
@@ -138,9 +137,13 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
 
+        schema = self.add_suggested_values_to_schema(
+            reconfigure_schema, user_input or {}
+        )
+
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=reconfigure_schema,
+            data_schema=schema,
             errors=errors,
         )
 

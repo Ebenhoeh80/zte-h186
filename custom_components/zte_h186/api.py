@@ -84,13 +84,14 @@ class ZteH186ApiClient:
     ) -> None:
         """Initialize the API client."""
         self._raw_host = host.strip()
-        self._username = username
-        self._password = password
+        self._username = username.strip()
+        self._password = password.rstrip("\r\n")
         self._custom_session = session is not None
         self._session = session
         self._timeout = aiohttp.ClientTimeout(total=timeout)
         self._base_url = self._format_base_url(self._raw_host)
         self._is_authenticated = False
+        self._sid: str | None = None
 
     @staticmethod
     def _format_base_url(host: str) -> str:
@@ -105,13 +106,13 @@ class ZteH186ApiClient:
                 return f"http://[{addr}]"
             return f"http://{addr}"
         except ValueError:
-            # Domain name or hostname
             return f"http://{clean_host}"
 
     async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create an aiohttp client session with cookie storage."""
+        """Get or create an aiohttp client session with unsafe=True cookie storage."""
         if self._session is None or self._session.closed:
-            jar = aiohttp.CookieJar(unsafe=True)
+            # Crucial: unsafe=True is required so aiohttp does not reject cookies from IP addresses!
+            jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
             self._session = aiohttp.ClientSession(
                 cookie_jar=jar,
                 timeout=self._timeout,
@@ -127,18 +128,25 @@ class ZteH186ApiClient:
     def _decode_session_token(html_text: str) -> str:
         """Extract and decode hex-encoded session token from login page."""
         match = re.search(
-            r'_sessionTmpToken\s*=\s*"((?:\\x[0-9a-fA-F]{2})+)"',
+            r'_sessionTmpToken\s*=\s*[\'"]((?:\\x[0-9a-fA-F]{2})+)[\'"]',
             html_text,
         )
         if not match:
-            raise ZteH186ProtocolError("Session token missing on modem login page.")
+            # Fallback pattern
+            match = re.search(r'_sessionTmpToken\s*=\s*[\'"]([^\'"]+)[\'"]', html_text)
+            if not match:
+                raise ZteH186ProtocolError("Session token missing on modem login page.")
+            val = match.group(1)
+            if "\\x" in val:
+                hex_bytes = "".join(re.findall(r"\\x([0-9a-fA-F]{2})", val))
+                return bytes.fromhex(hex_bytes).decode("ascii", errors="replace")
+            return val
+
         hex_bytes = "".join(re.findall(r"\\x([0-9a-fA-F]{2})", match.group(1)))
         try:
-            return bytes.fromhex(hex_bytes).decode("ascii")
+            return bytes.fromhex(hex_bytes).decode("ascii", errors="replace")
         except Exception as err:
-            raise ZteH186ProtocolError(
-                f"Failed to decode session token: {err}"
-            ) from err
+            raise ZteH186ProtocolError(f"Failed to decode session token: {err}") from err
 
     @staticmethod
     def _extract_xml_values(xml_string: str) -> dict[str, str]:
@@ -177,23 +185,20 @@ class ZteH186ApiClient:
         """Execute the 4-step authentication handshake with the modem."""
         session = await self._get_session()
         root_url = f"{self._base_url}/"
+        self._sid = None
 
         # Step 1: Request root login page and extract _sessionTmpToken
         try:
             async with session.get(root_url) as resp:
                 if resp.status != 200:
-                    raise ZteH186ConnectionError(
-                        f"Login page returned HTTP {resp.status}"
-                    )
+                    raise ZteH186ConnectionError(f"Login page returned HTTP {resp.status}")
                 login_page_text = await resp.text(encoding="latin-1", errors="replace")
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            raise ZteH186ConnectionError(
-                f"Unable to reach modem at {self._base_url}: {err}"
-            ) from err
+            raise ZteH186ConnectionError(f"Unable to reach modem at {self._base_url}: {err}") from err
 
         session_token = self._decode_session_token(login_page_text)
 
-        # Step 2: Fetch login token
+        # Step 2: Fetch login token (challenge)
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
         try:
             async with session.get(token_url, headers={"Referer": root_url}) as resp:
@@ -207,9 +212,7 @@ class ZteH186ApiClient:
         login_token = token_match.group(1)
 
         # Step 3: Compute SHA-256 and submit login form
-        pass_hash = hashlib.sha256(
-            (self._password + login_token).encode("utf-8")
-        ).hexdigest()
+        pass_hash = hashlib.sha256((self._password + login_token).encode("utf-8")).hexdigest()
 
         login_payload = {
             "Username": self._username,
@@ -218,87 +221,94 @@ class ZteH186ApiClient:
             "_sessionTOKEN": session_token,
         }
 
+        # Some ZTE firmware builds require the _TESTCOOKIESUPPORT cookie during login POST
+        login_headers = {
+            "Referer": root_url,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cookie": "_TESTCOOKIESUPPORT=1",
+        }
+
         try:
             async with session.post(
                 root_url,
                 data=login_payload,
-                headers={
-                    "Referer": root_url,
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
+                headers=login_headers,
                 allow_redirects=False,
             ) as resp:
-                # Modem sets cookie 'SID' on success (HTTP 200 or 302)
-                pass
+                # Direct Set-Cookie header extraction (bypasses any IP cookie-jar limitations)
+                for cookie_header in resp.headers.getall("Set-Cookie", []):
+                    sid_match = re.search(r"\bSID=([^;,\s]+)", cookie_header)
+                    if sid_match:
+                        self._sid = sid_match.group(1)
+                        break
+
+                if not self._sid and "SID" in resp.cookies:
+                    self._sid = resp.cookies["SID"].value
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise ZteH186ConnectionError(f"Failed to send login form: {err}") from err
 
-        cookies = session.cookie_jar.filter_cookies(self._base_url)
-        if "SID" not in cookies or not cookies["SID"].value:
+        # Fallback check from session cookie jar
+        if not self._sid:
+            try:
+                cookies = session.cookie_jar.filter_cookies(self._base_url)
+                if "SID" in cookies and cookies["SID"].value:
+                    self._sid = cookies["SID"].value
+            except Exception:
+                pass
+
+        if not self._sid:
             raise ZteH186AuthError(
-                "Authentication failed: no SID session cookie received. Check password."
+                "Authentication failed: no SID session cookie received. Check username and password."
             )
 
         # Step 4: Prime DSL status page
-        status_url = (
-            f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
-        )
+        status_url = f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
+        status_headers = {
+            "Referer": root_url,
+            "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
+        }
         try:
-            async with session.get(
-                status_url,
-                headers={"Referer": root_url},
-            ) as resp:
+            async with session.get(status_url, headers=status_headers) as resp:
                 status_page_html = await resp.text(encoding="latin-1", errors="replace")
                 if resp.status != 200 or "internet_dsl_interface_lua.lua" not in status_page_html:
-                    raise ZteH186ProtocolError(
-                        "Status page did not contain expected DSL interface reference."
-                    )
+                    raise ZteH186ProtocolError("Status page did not contain expected DSL interface reference.")
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            raise ZteH186ConnectionError(
-                f"Failed to load intermediate DSL status page: {err}"
-            ) from err
+            raise ZteH186ConnectionError(f"Failed to load intermediate DSL status page: {err}") from err
 
         self._is_authenticated = True
-        _LOGGER.debug("Successfully authenticated with ZTE H186 at %s", self._base_url)
+        _LOGGER.debug("Successfully authenticated with ZTE H186 at %s (SID=%s)", self._base_url, self._sid[:4] + "***")
 
     async def async_get_dsl_stats(self) -> ZteH186Data:
         """Fetch and parse current DSL statistics from the modem."""
         session = await self._get_session()
 
-        # If not authenticated, run login first
-        if not self._is_authenticated:
+        if not self._is_authenticated or not self._sid:
             await self.async_login()
 
-        status_url = (
-            f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
-        )
+        status_url = f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
         ts_ms = int(time.time() * 1000)
-        endpoint = (
-            f"{self._base_url}/common_page/internet_dsl_interface_lua.lua?_={ts_ms}"
-        )
+        endpoint = f"{self._base_url}/common_page/internet_dsl_interface_lua.lua?_={ts_ms}"
 
         headers = {
             "X-Requested-With": "XMLHttpRequest",
             "Accept": "application/xml, text/xml, */*; q=0.01",
             "Referer": status_url,
+            "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
         }
 
         try:
             async with session.get(endpoint, headers=headers) as resp:
                 response_text = await resp.text(encoding="latin-1", errors="replace")
                 if resp.status != 200 or "SessionTimeout" in response_text:
-                    _LOGGER.debug("Session expired or HTTP error %s, re-authenticating...", resp.status)
+                    _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
                     self._is_authenticated = False
+                    self._sid = None
                     await self.async_login()
-                    # Retry once with refreshed session
+                    headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
                     async with session.get(endpoint, headers=headers) as retry_resp:
-                        response_text = await retry_resp.text(
-                            encoding="latin-1", errors="replace"
-                        )
+                        response_text = await retry_resp.text(encoding="latin-1", errors="replace")
                         if retry_resp.status != 200:
-                            raise ZteH186ProtocolError(
-                                f"DSL endpoint returned HTTP {retry_resp.status} after re-login."
-                            )
+                            raise ZteH186ProtocolError(f"DSL endpoint returned HTTP {retry_resp.status} after re-login.")
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise ZteH186ConnectionError(f"Connection error requesting DSL stats: {err}") from err
 
@@ -307,7 +317,6 @@ class ZteH186ApiClient:
         if error not in ("", "SUCC"):
             raise ZteH186ProtocolError(f"Modem returned error: {error}")
 
-        # Ensure required fields
         required_keys = (
             "Downstream_current_rate",
             "Upstream_current_rate",
@@ -322,13 +331,11 @@ class ZteH186ApiClient:
         )
         missing = [k for k in required_keys if k not in values]
         if missing:
-            raise ZteH186ProtocolError(
-                f"Missing required fields in DSL response: {', '.join(missing)}"
-            )
+            raise ZteH186ProtocolError(f"Missing required fields in DSL response: {', '.join(missing)}")
 
         def _to_float(key: str, divisor: float = 1.0) -> float:
             val = values.get(key)
-            if val is None or val == "":
+            if not val:
                 return 0.0
             try:
                 return float(val) / divisor
@@ -337,7 +344,7 @@ class ZteH186ApiClient:
 
         def _to_opt_float(key: str, divisor: float = 1.0) -> float | None:
             val = values.get(key)
-            if val is None or val == "":
+            if not val:
                 return None
             try:
                 return float(val) / divisor
@@ -346,7 +353,7 @@ class ZteH186ApiClient:
 
         def _to_opt_int(key: str) -> int | None:
             val = values.get(key)
-            if val is None or val == "":
+            if not val:
                 return None
             try:
                 return int(val)

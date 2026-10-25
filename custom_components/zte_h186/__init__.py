@@ -6,7 +6,6 @@ import logging
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .api import ZteH186ApiClient
 from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
@@ -27,27 +26,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> b
     username = entry.data.get(CONF_USERNAME, "admin")
     password = entry.data[CONF_PASSWORD]
 
-    # Create dedicated session with custom cookie jar for modem session management
-    session = async_create_clientsession(hass, cookie_jar=None)
     client = ZteH186ApiClient(
         host=host,
         username=username,
         password=password,
-        session=session,
     )
 
     coordinator = ZteH186DataUpdateCoordinator(hass, entry, client)
-
-    # Perform initial data fetch
     await coordinator.async_config_entry_first_refresh()
 
-    # Store coordinator using modern ConfigEntry runtime_data
     entry.runtime_data = coordinator
-
-    # Forward setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    # Register options update listener
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True

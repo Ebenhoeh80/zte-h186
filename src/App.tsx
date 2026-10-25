@@ -187,6 +187,17 @@ export default function App() {
               {demoMode ? 'Demo Aktiv' : 'Echte IP'}
             </button>
 
+            {/* Download Release ZIP */}
+            <a
+              href="/api/download/release-zip"
+              download="zte-h186-v1.0.0.zip"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+              title="Release-Paket (v1.0.0.zip) herunterladen"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Release ZIP (v1.0.0)</span>
+            </a>
+
             {/* Refresh Button */}
             <button
               onClick={fetchStats}

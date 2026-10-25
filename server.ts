@@ -419,6 +419,16 @@ app.get('/api/hacs/files', (_req: Request, res: Response) => {
   res.json({ files: results });
 });
 
+// API: Download Release ZIP
+app.get('/api/download/release-zip', (_req: Request, res: Response) => {
+  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.0.0.zip');
+  if (fs.existsSync(zipPath)) {
+    res.download(zipPath, 'zte-h186-v1.0.0.zip');
+  } else {
+    res.status(404).send('ZIP archive not found');
+  }
+});
+
 // Vite dev middleware or production static
 async function startServer() {
   if (!isProd) {
