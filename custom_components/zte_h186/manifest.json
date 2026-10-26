@@ -1,9 +1,6 @@
 {
   "domain": "zte_h186",
   "name": "ZTE H186 DSL Modem",
-  "categories": [
-    "computers_network.routers_network"
-  ],
   "codeowners": [
     "@Ebenhoeh80"
   ],
