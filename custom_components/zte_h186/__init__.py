@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .api import ZteH186ApiClient
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, DOMAIN
 from .coordinator import ZteH186ConfigEntry, ZteH186DataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,6 +23,19 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> bool:
     """Set up ZTE H186 from a config entry."""
+    # Register static path for local brand icons (supporting all Home Assistant core versions)
+    brand_dir = Path(__file__).parent / "brand"
+    if hasattr(hass, "http") and brand_dir.is_dir():
+        try:
+            hass.http.register_static_path(
+                f"/api/brands/integration/{DOMAIN}",
+                str(brand_dir),
+                cache_headers=True,
+            )
+        except Exception:
+            # Already registered or handled by Core brands proxy
+            pass
+
     host = entry.data[CONF_HOST]
     username = entry.data.get(CONF_USERNAME, "admin")
     password = entry.data[CONF_PASSWORD]

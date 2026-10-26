@@ -9,8 +9,8 @@
 
 set -euo pipefail
 
-read -rp "Router-IP oder Hostname [192.168.1.1]: " ROUTER
-ROUTER=${ROUTER:-192.168.1.1}
+read -rp "Router-IP oder Hostname [192.168.10.2]: " ROUTER
+ROUTER=${ROUTER:-192.168.10.2}
 
 if [[ -z "$ROUTER" ]]; then
     echo "Fehler: Router-IP oder Hostname erforderlich."

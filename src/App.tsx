@@ -44,7 +44,7 @@ export default function App() {
   // Settings & Demo State
   const [demoMode, setDemoMode] = useState<boolean>(true);
   const [preset, setPreset] = useState<'vdsl100' | 'supervectoring250' | 'degraded' | 'errorSpike'>('vdsl100');
-  const [host, setHost] = useState<string>('192.168.1.1');
+  const [host, setHost] = useState<string>('192.168.10.2');
   const [username, setUsername] = useState<string>('admin');
   const [password, setPassword] = useState<string>('');
   const [autoPoll, setAutoPoll] = useState<boolean>(true);
@@ -58,6 +58,17 @@ export default function App() {
   // Protocol steps
   const [protocolSteps, setProtocolSteps] = useState<ProtocolStepResult[]>([]);
   const [testingProtocol, setTestingProtocol] = useState<boolean>(false);
+
+  // Load configuration on mount
+  useEffect(() => {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((cfg) => {
+        if (cfg.defaultHost) setHost(cfg.defaultHost);
+        if (cfg.defaultUsername) setUsername(cfg.defaultUsername);
+      })
+      .catch(console.error);
+  }, []);
 
   // Fetch modem stats
   const fetchStats = useCallback(async () => {

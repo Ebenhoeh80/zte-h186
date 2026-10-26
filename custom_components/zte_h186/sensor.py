@@ -317,6 +317,13 @@ class ZteH186Sensor(CoordinatorEntity[ZteH186DataUpdateCoordinator], SensorEntit
         return self.entity_description.value_fn(self.coordinator.data)
 
     @property
+    def entity_picture(self) -> str | None:
+        """Return the entity picture for the primary DSL status sensor."""
+        if self.entity_description.key == "dsl_status":
+            return f"/api/brands/integration/{DOMAIN}/icon.png"
+        return None
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return all raw modem XML attributes on the primary status sensor."""
         if (

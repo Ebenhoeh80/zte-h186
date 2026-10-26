@@ -144,14 +144,24 @@ function generateSimulatedData(preset: string = 'vdsl100') {
   };
 }
 
-// API Health Check
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// API Config (returns non-secret defaults)
+app.get('/api/config', (_req: Request, res: Response) => {
+  res.json({
+    defaultHost: process.env.ZTE_MODEM_HOST || '192.168.10.2',
+    defaultUsername: process.env.ZTE_MODEM_USER || 'admin',
+    hasEnvPassword: Boolean(process.env.ZTE_MODEM_PASSWORD),
+  });
 });
 
 // API Modem Stats
 app.post('/api/modem/stats', async (req: Request, res: Response) => {
-  const { host = '192.168.1.1', username = 'admin', password = '', simulate = true, preset = 'vdsl100' } = req.body;
+  const {
+    host = process.env.ZTE_MODEM_HOST || '192.168.10.2',
+    username = process.env.ZTE_MODEM_USER || 'admin',
+    password = process.env.ZTE_MODEM_PASSWORD || '',
+    simulate = true,
+    preset = 'vdsl100'
+  } = req.body;
 
   if (simulate) {
     return res.json(generateSimulatedData(preset));
@@ -420,6 +430,17 @@ app.get('/api/hacs/files', (_req: Request, res: Response) => {
   });
 
   res.json({ files: results });
+});
+
+// API: Brands integration proxy (matching Home Assistant core route)
+app.get('/api/brands/integration/zte_h186/:file', (req: Request, res: Response) => {
+  const file = req.params.file;
+  const brandPath = path.join(__dirname, 'custom_components', 'zte_h186', 'brand', file);
+  if (fs.existsSync(brandPath)) {
+    res.sendFile(brandPath);
+  } else {
+    res.status(404).send('Brand image not found');
+  }
 });
 
 // API: Download Release ZIP

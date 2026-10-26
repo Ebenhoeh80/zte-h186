@@ -327,20 +327,20 @@ def main():
     parser.add_argument(
         "--host",
         type=str,
-        default=os.environ.get("ZTE_HOST"),
-        help="Router IP-Adresse oder Hostname (z.B. 192.168.1.1)",
+        default=os.environ.get("ZTE_HOST") or os.environ.get("ZTE_MODEM_HOST", "192.168.10.2"),
+        help="Router IP address or hostname (default: 192.168.10.2)",
     )
     parser.add_argument(
         "--user",
         type=str,
-        default=os.environ.get("ZTE_USER", "admin"),
-        help="Router Benutzername (Standard: admin)",
+        default=os.environ.get("ZTE_USER") or os.environ.get("ZTE_MODEM_USER", "admin"),
+        help="Router username (default: admin)",
     )
     parser.add_argument(
         "--password",
         type=str,
-        default=os.environ.get("ZTE_PASSWORD"),
-        help="Router Web-Passwort",
+        default=os.environ.get("ZTE_PASSWORD") or os.environ.get("ZTE_MODEM_PASSWORD"),
+        help="Router web administration password",
     )
     parser.add_argument(
         "--credentials",
