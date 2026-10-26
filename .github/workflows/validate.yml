@@ -1,0 +1,48 @@
+name: Validate & Test
+# Copyright (C) 2026 Daniel Ebenhöh
+# SPDX-License-Identifier: GPL-3.0-only
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-hacs:
+    name: HACS Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: HACS Action
+        uses: "hacs/action@main"
+        with:
+          category: "integration"
+
+  validate-hassfest:
+    name: Hassfest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Hassfest
+        uses: "home-assistant/actions/hassfest@master"
+
+  test-python:
+    name: Python Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover -s tests -v

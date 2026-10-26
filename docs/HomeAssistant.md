@@ -27,32 +27,40 @@ Veroeffentlichung separat geprueft werden, siehe Abschnitt Veroeffentlichung.
 
 | Datei | Aufgabe |
 |---|---|
+| [custom_components/zte_h186](../custom_components/zte_h186) | Home Assistant Custom Integration (HACS / UI Config Flow) |
 | [zte-h186-stats.py](zte-h186-stats.py) | Python-Client mit Login, Parser, Netzpruefung und JSON-Ausgabe |
 | [zte-h186-package.yaml](zte-h186-package.yaml) | Gemeinsamer Command-Line-Abruf und 26 Template-Sensoren |
 | [zte-h186-stats.sh](zte-h186-stats.sh) | Urspruengliche interaktive Feldreferenz, nicht Teil des HA-Laufzeitwegs |
 | [zte-h186-credentials.example.json](zte-h186-credentials.example.json) | Optionale JSON-Strukturvorlage, vor Veroeffentlichung auf eigene Werte pruefen |
 | [tests/test_zte_h186.py](tests/test_zte_h186.py) | Netzfreie Unittests mit synthetischen Antworten |
-| [README.md](README.md) | Kompakte Installations- und Betriebsanleitung |
+| [README.md](../README.md) | Kompakte Installations- und Betriebsanleitung |
 
 ## Architektur
 
+Das Projekt unterstützt zwei Einbindungsvarianten für Home Assistant:
+
+1. **Home Assistant Custom Integration (`custom_components/zte_h186`)**:
+   - Native Integration mit UI Config Flow (**Einstellungen > Geräte & Dienste > Integration hinzufügen**)
+   - Automatisches Erstellen von 27 Sensoren, Binärsensoren und Diagnose-Button
+   - Zentraler asynchroner DataUpdateCoordinator mit Session-Caching
+   - Unterstützt HACS und automatische Reorganisation bei IP-/Passwort-Änderung
+
+2. **Klassisches YAML-Paket (`zte-h186-package.yaml`)**:
+   - Command-Line-Prozessabruf (`zte-h186-stats.py`) alle 300 Sekunden
+   - Bereitstellung von Abrufsensor und Template-Sensoren
+   - Für rein dateibasierte Umgebungen ohne Custom Components
+
 ```text
 Home Assistant Core
-  -> command_line: ein Python-Prozess alle 300 Sekunden
-     -> sichere Zugangsdatenverarbeitung
-     -> Pruefung von Modemziel und tatsaechlicher lokaler Quelladresse
-     -> Token-/Cookie-Login und DSL-XML-Abruf
-     -> gemeinsames JSON mit Status, UTC-Zeitpunkt und Daten
-  -> ein Abrufsensor mit JSON-Attributen
-  -> 26 Template-Sensoren mit gemeinsamer Frischepruefung
+  -> Custom Integration (custom_components/zte_h186)
+     -> Config Flow (Host, Username, Password)
+     -> DataUpdateCoordinator (asynchrone aiohttp-Abfragen)
+     -> 27 Sensor-Entitäten, 2 Binärsensoren, 1 Action-Button
+  -> ODER command_line YAML-Paket:
+     -> Python-Prozess (zte-h186-stats.py)
+     -> gemeinsames JSON mit Status, Zeitpunkt und Daten
+     -> 26 Template-Sensoren
 ```
-
-Dies ist ein YAML-Paket, keine eigenstaendige Custom-Integration. Es entsteht keine
-eigene ZTE-Kachel unter Integrationen und kein gemeinsamer Geraeteeintrag. Die Sensoren
-werden von `command_line` und `template` bereitgestellt. Eine Custom-Integration
-wuerde Config Flow, zentralen Coordinator, Sensorplattform, Geraetezuordnung,
-Authentifizierungsfehlerbehandlung und eine getestete Migration benoetigen.
-Eine HACS-Installation oder automatische Geraeteerkennung ist nicht implementiert.
 
 ## Voraussetzungen und Kompatibilitaet
 
@@ -88,6 +96,82 @@ Die Quelle wird ueber die lokale Routenwahl ermittelt und die HTTP-Verbindung da
 gebunden. Ein erfolgreicher Zugriff von einem Entwicklungsrechner oder einer Terminal-App
 beweist deshalb keinen Zugriff aus Core. Eine App ist ein anderer Ausfuehrungskontext.
 Keine Firewall-, Routing- oder Proxy-Umgehung verwenden.
+
+## Verkabelung und lokale Verwaltung des Modems
+
+Diese Anleitung beschreibt die physische Verkabelung und die netzwerkseitige Einrichtung für den zuverlässigen Betrieb des ZTE H186 als reines DSL-Modem vor einem nachgeschalteten Router bei gleichzeitigem lokalem Managementzugriff.
+
+### Anschlüsse und Farbcodierung
+
+Die Anschlüsse des ZTE H186 übernehmen getrennte Rollen im Heim- und Betriebsnetzwerk:
+
+| Port / Farbmarkierung | Bezeichnung | Verbindung | Funktion und Datenfluss |
+|---|---|---|---|
+| **Rot** | WAN / Routeranschluss | Mit dem **WAN-Port** des nachgeschalteten Routers verbinden | Leitet die reine DSL-Verbindung (Bridge-Modus / PPPoE-Passthrough) an den Hauptrouter weiter. Über diesen Port findet **keine** lokale Geräteverwaltung oder Weboberflächen-Anmeldung statt. |
+| **Gelb** | LAN / Verwaltung | Mit einem **Netzwerkswitch** im lokalen Verwaltungsnetz verbinden | Dient ausschließlich dem administrativen Zugriff auf die Weboberfläche sowie der lokalen Telemetrieabfrage durch Home Assistant. |
+| **Grau** | DSL | Mit der **DSL-/Telefonleitung** (TAE/Splitter/Anschlussdose) verbinden | Führt das Hochfrequenz-DSL-Signal der Teilnehmeranschlussleitung direkt an das Modem. |
+
+> **Hinweis zu Herstellerunterlagen und Modellabweichungen:**  
+> Die oben genannte Farbkodierung (Grau = DSL, Rot = WAN, Gelb = LAN) entspricht der geläufigen Werks- und Gehäuseausführung des ZTE H186. Je nach Distributor, Hardware-Revision oder Provider-Variante können einzelne Geräte abweichende Markierungen aufweisen (beispielsweise neutrale Buchsen mit eingeprägter Beschriftung wie `DSL`, `WAN` bzw. `LAN1` statt farbiger Ringe). Prüfen Sie vor dem Anstecken stets die Beschriftung direkt an den Buchsen des vorhandenen Geräts und gleichen Sie diese mit den zugehörigen Herstellerunterlagen ab.
+
+---
+
+### Schritt-für-Schritt-Einrichtung der lokalen Verwaltung
+
+Um IP-Adresskollisionen im Produktivnetz zu verhindern und einen stabilen Abruf zu gewährleisten, wird das Modem vor der Einbindung in das Hausnetz vorkonfiguriert:
+
+1. **Initialer Direktzugriff:**  
+   Falls erforderlich (z. B. bei Neugeräten, nach einem Werksreset oder bei unbekannter Vorbelegung), schließen Sie zunächst einen PC oder Laptop direkt mit einem Ethernetkabel am **gelben LAN-Anschluss** an. Öffnen Sie die Weboberfläche des Modems im Webbrowser über die aktuell gültige bzw. werksseitige LAN-IP.
+
+2. **Feste IP-Adresse im lokalen Verwaltungsnetz zuweisen:**  
+   Weisen Sie dem LAN-Anschluss des ZTE H186 in den lokalen Netzwerkeinstellungen eine freie, feste IPv4-Adresse (`<MODEM-LAN-IP>`) aus Ihrem lokalen Verwaltungsnetz (z. B. Management-Subnetz oder Administrations-VLAN) zu.  
+   - Wählen Sie die Subnetzmaske (`<SUBNETZ-MASKE>`) passend zu Ihrem Verwaltungsnetzwerk.  
+   - Stellen Sie sicher, dass die vergebene `<MODEM-LAN-IP>` außerhalb des dynamischen DHCP-Vergabebereichs (DHCP-Pool) anderer Netzwerkgeräte liegt und keine Adresskonflikte mit bestehenden festen IP-Adressen im Netz entstehen.
+
+3. **DHCP-Server des ZTE H186 deaktivieren:**  
+   Deaktivieren Sie den integrierten DHCP-Server des ZTE H186 in den LAN-Einstellungen zwingend, **bevor** der gelbe Anschluss mit dem Switch des produktiven Netzwerks verbunden wird.  
+   - *Hintergrund:* Zwei aktive DHCP-Server im selben Netzwerksegment ("Rogue DHCP") führen zu unkontrollierten Adressvergaben und massiven Verbindungsabbrüchen von Clients im Heimnetz.  
+   - Der DHCP-Server des nachgeschalteten Hauptrouters bleibt unverändert aktiv und verwaltet weiterhin zentral alle regulären Netzwerk-Clients.
+
+4. **Einstellungen speichern und neue Adresse aufrufen:**  
+   Speichern Sie die geänderten Einstellungen auf dem Modem. Passen Sie die IP-Adresse des Test-PCs an das gewählte Verwaltungsnetz an und rufen Sie die Modemoberfläche im Browser unter der neuen statischen Adresse `http://<MODEM-LAN-IP>` auf, um die einwandfreie Erreichbarkeit zu prüfen.
+
+5. **Verbindung mit dem Verwaltungsnetzwerk herstellen:**  
+   Verbinden Sie den **gelben LAN-Anschluss** nun mit einem Switchport im passenden lokalen Verwaltungsnetzwerk.
+
+6. **Zukünftiger Anmeldepfad:**  
+   Das spätere Login sowie sämtliche Sensorabfragen erfolgen ausschließlich über die konfigurierte LAN-IP (`<MODEM-LAN-IP>`) am gelben LAN-Port – niemals über den roten WAN-Anschluss.
+
+---
+
+### Bezug zur Home-Assistant-Integration
+
+Home Assistant fragt die DSL-Telemetriedaten lokal über die konfigurierte Management-Schnittstelle ab:
+
+1. **Netzwerkerreichbarkeit aus Home Assistant:**  
+   - Die in Home Assistant hinterlegte Modemadresse muss der erreichbaren lokalen LAN-IP (`<MODEM-LAN-IP>`) entsprechen.  
+   - Die Home-Assistant-Instanz (z. B. auf Home Assistant OS / HAOS) benötigt netzwerkseitigen Zugriff auf diese LAN-IP über Port 80 (HTTP). Werden Home Assistant und das Modem in unterschiedlichen VLANs oder Subnetzen betrieben, müssen zwischengeschaltetes Routing und Firewall-Regeln den Zugriff auf `<MODEM-LAN-IP>` explizit gestatten.
+
+2. **Hinterlegen der Zugangsdaten in der Home-Assistant-Integration:**  
+   In Home Assistant wird die Verbindung über die vorhandene Integration eingerichtet:  
+   - Navigieren Sie zu **Einstellungen > Geräte & Dienste**.  
+   - Klicken Sie auf **Integration hinzufügen** und suchen Sie nach **ZTE H186 DSL Modem**.  
+   - Hinterlegen Sie im Einrichtungsdialog die folgenden Parameter:  
+     - **IP-Adresse oder Hostname** (`host`): Die feste LAN-IP des Modems (`<MODEM-LAN-IP>`).  
+     - **Benutzername** (`username`): Der Benutzername der Weboberfläche (Voreinstellung: `admin`).  
+     - **Passwort** (`password`): Das administrative Kennwort der Modem-Weboberfläche.  
+   - *Geschützte Speicherung:* Das Passwort wird im Einrichtungsdialog ausschließlich in das dafür vorgesehene maskierte Passwortfeld eingetragen. Home Assistant speichert diese Zugangsdaten geschützt im internen Konfigurationseintrag (`ConfigEntry`). Zugangsdaten dürfen niemals in ungesicherten Skripten, Automatisierungen oder Klartextdateien hinterlegt werden.
+
+3. **Klassischer Weg (YAML-Paket / Secrets):**  
+   Wird alternativ das legacy YAML-Paket verwendet, werden die Werte ausschließlich in `/config/secrets.yaml` als sichere Referenz hinterlegt:  
+   ```yaml
+   zte_h186_host: "<MODEM-LAN-IP>"
+   zte_h186_password: "<MODEM-PASSWORT>"
+   ```
+
+4. **Vorgesehene Einrichtung und tatsächlich geprüfter Zustand:**  
+   - *Vorgesehene Einrichtung:* Die hier beschriebene Zwei-Kabel-Topologie (roter WAN-Port für Internetdatenverkehr zum Router; gelber LAN-Port für lokale Verwaltung und Home-Assistant-Telemetrie über Switch/VLAN) stellt die herstellerkonforme und netzwerktechnisch saubere Trennung für den Bridge-Betrieb dar.  
+   - *Geprüfter Zustand:* Die Software-Integration und Protokollabläufe wurden im Rahmen der Testsuite und lokaler Schnittstellentests (u. a. Token-/Challenge-Handshake, Session-Handling, Coordinator-Updates, Entity-Registry) evidenzbasiert validiert. Die tatsächliche physische Verkabelung, VLAN-Segmentierung, Switchport-Konfiguration und Firewall-Freigaben müssen in der jeweiligen Zielumgebung vor Ort anhand der individuellen Netzwerktopologie verifiziert werden.
 
 ## Installation
 

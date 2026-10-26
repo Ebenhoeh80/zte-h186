@@ -1,64 +1,79 @@
 # Setup and Configuration
 
-Each checkout requires its own modem address and administrator password. The
-client deliberately has no default modem address and does not accept either
-value through command-line arguments or environment variables. Both values
-must be stored as encrypted age files in the project's `secrets/` directory.
+The ZTE H186 project provides multiple flexible and secure ways to supply connection credentials, depending on your deployment environment (CLI script, Home Assistant Custom Component, or Docker/daemon execution).
 
-## Requirements
+## Credential Methods
 
-- Python 3.10 or later
-- `age` and `age-keygen`
-- Network access from this machine to the modem's web interface
-- A ZTE H186 with the DSL status page enabled
+The client supports four configuration methods in order of priority:
 
-No Python packages need to be installed.
+### 1. JSON Credentials File (Recommended for Automation)
+Supply a protected local JSON file via `--credentials`:
+```sh
+python3 zte_h186_stats.py --credentials /path/to/credentials.json --ha-json
+```
+JSON format:
+```json
+{
+  "host": "<MODEM-LAN-IP>",
+  "username": "admin",
+  "password": "<MODEM-PASSWORD>"
+}
+```
 
-## Create Local Secrets
+### 2. Command-Line Arguments & Environment Variables
+For interactive use or containerized setups:
+```sh
+# Using CLI parameters:
+python3 zte_h186_stats.py --host <MODEM-LAN-IP> --user admin --password "<MODEM-PASSWORD>"
 
-Run these commands from the project root. The helper prompts without echoing
-the entered value and writes an encrypted file under `secrets/`:
+# Or via environment variables:
+export ZTE_MODEM_HOST="<MODEM-LAN-IP>"
+export ZTE_MODEM_USER="admin"
+export ZTE_MODEM_PASSWORD="<MODEM-PASSWORD>"
+python3 zte_h186_stats.py --ha-json
+```
 
+### 3. Encrypted Age Secrets (Maximum At-Rest Security)
+For environments requiring secrets encryption at rest without plain credentials files, you can use `age`:
+
+Run these helper commands to prompt and encrypt directly into `secrets/`:
 ```sh
 ./store-age-secret.sh zte-ipaddress
 ./store-age-secret.sh zte-admin-password
 ```
+The helper creates `~/.config/age/keys.txt` (or respects `AGE_IDENTITY`) and stores encrypted `.age` files.
 
-For the address prompt, enter only an IPv4 or IPv6 address, without a scheme,
-port, path, or surrounding quotes. For the password prompt, enter the modem
-administrator password. Do not place either value in source files, shell
-arguments, environment variables, issue reports, or public logs.
+```sh
+python3 zte_h186_stats.py --ha-json
+```
 
-The first invocation creates `~/.config/age/keys.txt` if it does not exist.
-This is the private age identity used to decrypt the local files. Keep a
-protected backup of it: without the matching identity, the encrypted files
-cannot be recovered. If an identity already exists, the helper uses it.
+### 4. Home Assistant UI Config Flow
+When installed as a Home Assistant Integration (via HACS or `custom_components/zte_h186`):
+1. In Home Assistant, navigate to **Settings > Devices & Services > Add Integration**.
+2. Search for **ZTE H186 DSL Modem**.
+3. Enter the modem IP address (`<MODEM-LAN-IP>`), username (`admin`), and password.
+4. The integration automatically establishes a session, verifies connectivity, and creates 27 sensors and a diagnostic refresh button.
 
-The resulting filenames follow these patterns:
+For detailed hardware port cabling (Red WAN, Yellow LAN, Grey DSL) and assigning a static management IP to the modem, see the [Cabling and Local Management Guide](HomeAssistant.md#verkabelung-und-lokale-verwaltung-des-modems).
 
-- `secrets/zte-ipaddress-<UTC timestamp>.age`
-- `secrets/zte-admin-password-<UTC timestamp>.age`
+## Requirements
 
-The client uses the newest file matching each pattern. Create a new encrypted
-file with the same purpose to replace a value. Remove obsolete local versions
-only after confirming the new file works.
+- Python 3.10 or later
+- Network access to the ZTE H186 modem web interface (default port 80)
+- A ZTE H186 with the DSL status page enabled
 
 ## Run the Client
 
 ```sh
+# Human-readable table:
 python3 zte_h186_stats.py
+
+# Raw XML values as JSON:
 python3 zte_h186_stats.py --json
+
+# Normalized Home Assistant JSON:
+python3 zte_h186_stats.py --ha-json
 ```
-
-Use `AGE_IDENTITY` to select a non-default private identity:
-
-```sh
-AGE_IDENTITY=/path/to/private/identity.txt python3 zte_h186_stats.py
-```
-
-The client decrypts the two files in memory, validates that the address is an
-IP literal, logs in, loads the DSL status page, and then requests the DSL data.
-It does not write decrypted values to disk.
 
 ## Troubleshooting
 

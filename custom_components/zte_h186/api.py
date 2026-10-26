@@ -92,6 +92,7 @@ class ZteH186ApiClient:
         self._base_url = self._format_base_url(self._raw_host)
         self._is_authenticated = False
         self._sid: str | None = None
+        self._lock = asyncio.Lock()
 
     @staticmethod
     def _format_base_url(host: str) -> str:
@@ -181,9 +182,8 @@ class ZteH186ApiClient:
                         param = None
         return values
 
-    async def async_login(self) -> None:
-        """Execute the 4-step authentication handshake with the modem."""
-        session = await self._get_session()
+    async def _async_login_internal(self, session: aiohttp.ClientSession) -> None:
+        """Execute the 4-step authentication handshake (internal, must hold self._lock)."""
         root_url = f"{self._base_url}/"
         self._sid = None
 
@@ -278,60 +278,76 @@ class ZteH186ApiClient:
         self._is_authenticated = True
         _LOGGER.debug("Successfully authenticated with ZTE H186 at %s (SID=%s)", self._base_url, self._sid[:4] + "***")
 
+    async def async_login(self) -> None:
+        """Execute the 4-step authentication handshake with the modem."""
+        async with self._lock:
+            session = await self._get_session()
+            await self._async_login_internal(session)
+
     async def async_get_dsl_stats(self) -> ZteH186Data:
         """Fetch and parse current DSL statistics from the modem."""
-        session = await self._get_session()
+        async with self._lock:
+            session = await self._get_session()
 
-        if not self._is_authenticated or not self._sid:
-            await self.async_login()
+            if not self._is_authenticated or not self._sid:
+                await self._async_login_internal(session)
 
-        status_url = f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
-        ts_ms = int(time.time() * 1000)
-        endpoint = f"{self._base_url}/common_page/internet_dsl_interface_lua.lua?_={ts_ms}"
+            status_url = f"{self._base_url}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
+            ts_ms = int(time.time() * 1000)
+            endpoint = f"{self._base_url}/common_page/internet_dsl_interface_lua.lua?_={ts_ms}"
 
-        headers = {
-            "X-Requested-With": "XMLHttpRequest",
-            "Accept": "application/xml, text/xml, */*; q=0.01",
-            "Referer": status_url,
-            "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
-        }
+            headers = {
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/xml, text/xml, */*; q=0.01",
+                "Referer": status_url,
+                "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
+            }
 
-        try:
-            async with session.get(endpoint, headers=headers) as resp:
-                response_text = await resp.text(encoding="latin-1", errors="replace")
-                if resp.status != 200 or "SessionTimeout" in response_text:
-                    _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
-                    self._is_authenticated = False
-                    self._sid = None
-                    await self.async_login()
-                    headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
-                    async with session.get(endpoint, headers=headers) as retry_resp:
-                        response_text = await retry_resp.text(encoding="latin-1", errors="replace")
-                        if retry_resp.status != 200:
-                            raise ZteH186ProtocolError(f"DSL endpoint returned HTTP {retry_resp.status} after re-login.")
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            raise ZteH186ConnectionError(f"Connection error requesting DSL stats: {err}") from err
+            try:
+                async with session.get(endpoint, headers=headers) as resp:
+                    response_text = await resp.text(encoding="latin-1", errors="replace")
+                    if resp.status != 200 or "SessionTimeout" in response_text:
+                        _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
+                        self._is_authenticated = False
+                        self._sid = None
+                        await self._async_login_internal(session)
+                        headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
+                        async with session.get(endpoint, headers=headers) as retry_resp:
+                            response_text = await retry_resp.text(encoding="latin-1", errors="replace")
+                            if retry_resp.status != 200:
+                                raise ZteH186ProtocolError(f"DSL endpoint returned HTTP {retry_resp.status} after re-login.")
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                raise ZteH186ConnectionError(f"Connection error requesting DSL stats: {err}") from err
 
-        values = self._extract_xml_values(response_text)
-        error = values.get("IF_ERRORSTR", "")
-        if error not in ("", "SUCC"):
-            raise ZteH186ProtocolError(f"Modem returned error: {error}")
+            values = self._extract_xml_values(response_text)
+            error = values.get("IF_ERRORSTR", "")
+            if error not in ("", "SUCC"):
+                raise ZteH186ProtocolError(f"Modem returned error: {error}")
 
-        required_keys = (
-            "Downstream_current_rate",
-            "Upstream_current_rate",
-            "Downstream_max_rate",
-            "Upstream_max_rate",
-            "Downstream_noise_margin",
-            "Upstream_noise_margin",
-            "Downstream_attenuation",
-            "Upstream_attenuation",
-            "CurrentProfile",
-            "Module_type",
-        )
-        missing = [k for k in required_keys if k not in values]
-        if missing:
-            raise ZteH186ProtocolError(f"Missing required fields in DSL response: {', '.join(missing)}")
+            required_keys = (
+                "Downstream_current_rate",
+                "Upstream_current_rate",
+                "Downstream_max_rate",
+                "Upstream_max_rate",
+                "Downstream_noise_margin",
+                "Upstream_noise_margin",
+                "Downstream_attenuation",
+                "Upstream_attenuation",
+                "CurrentProfile",
+                "Module_type",
+            )
+            missing = [k for k in required_keys if k not in values]
+            dsl_status = values.get("Status", "Down")
+            is_up = str(dsl_status).strip().lower() == "up"
+
+            if missing and is_up:
+                raise ZteH186ProtocolError(f"Missing required fields in DSL response while link is Up: {', '.join(missing)}")
+            elif missing:
+                _LOGGER.debug(
+                    "DSL line not in Showtime (Status=%s). Using zeroed rates for missing fields: %s",
+                    dsl_status,
+                    missing,
+                )
 
         def _to_float(key: str, divisor: float = 1.0) -> float:
             val = values.get(key)
@@ -369,9 +385,9 @@ class ZteH186ApiClient:
             upstream_snr=_to_float("Upstream_noise_margin", 10.0),
             downstream_attenuation=_to_float("Downstream_attenuation", 10.0),
             upstream_attenuation=_to_float("Upstream_attenuation", 10.0),
-            profile=values.get("CurrentProfile", "Unknown"),
-            modulation=values.get("Module_type", "Unknown"),
-            dsl_status=values.get("Status"),
+            profile=values.get("CurrentProfile", "None" if not is_up else "Unknown"),
+            modulation=values.get("Module_type", "None" if not is_up else "Unknown"),
+            dsl_status=values.get("Status", "Down"),
             downstream_power=_to_opt_float("Downstream_power", 10.0),
             upstream_power=_to_opt_float("Upstream_power", 10.0),
             data_path=values.get("Data_path"),

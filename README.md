@@ -67,10 +67,12 @@ An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**
 2. Click **Add Integration** in the bottom-right corner.
 3. Search for **ZTE H186 DSL Modem**.
 4. Provide your connection details:
-   - **IP Address or Hostname**: e.g., `192.168.1.1` (or your modem's management IP)
+   - **IP Address or Hostname**: `<MODEM-LAN-IP>` (your modem's local management IP)
    - **Username**: `admin` (default)
    - **Password**: Your modem's web administration password
 5. Click **Submit**. Home Assistant will validate the connection and automatically create the device and all entities.
+
+> 💡 **Hardware Wiring & Setup**: For a comprehensive guide on physical port cabling (Red WAN, Yellow LAN, Grey DSL), disabling the modem's internal DHCP server, and assigning a static management IP, see the [Cabling & Local Management Guide](docs/HomeAssistant.md#verkabelung-und-lokale-verwaltung-des-modems).
 
 ---
 
