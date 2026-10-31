@@ -5,6 +5,17 @@
 # SPDX-License-Identifier: GPL-3.0-only
 ```
 
+[English](en/HomeAssistant.md) | [Deutsch](de/HomeAssistant.md) | [Français](fr/HomeAssistant.md) | [Español](es/HomeAssistant.md)
+
+## Dokumentationssprachen / Documentation Languages
+
+Diese Dokumentation ist in 4 Sprachen verfügbar:
+- 🇬🇧 [English](en/HomeAssistant.md) – Local DSL Line Telemetry in Home Assistant & Cabling Guide
+- 🇩🇪 [Deutsch](de/HomeAssistant.md) – Lokale DSL-Leitungswerte in Home Assistant & Verkabelung
+- 🇫🇷 [Français](fr/HomeAssistant.md) – Télémétrie DSL locale dans Home Assistant & Câblage
+- 🇪🇸 [Español](es/HomeAssistant.md) – Telemetría DSL local en Home Assistant y Cableado
+
+
 ## Zweck und Umfang
 
 Das Projekt liest DSL-Leitungswerte eines kompatiblen ZTE-H186-Modems ueber dessen

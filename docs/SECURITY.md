@@ -1,5 +1,7 @@
 # Security and Public Releases
 
+[English](en/Security.md) | [Deutsch](de/Security.md) | [Français](fr/Security.md) | [Español](es/Security.md)
+
 ## Secret Handling
 
 The modem address and administrator password belong in encrypted files under

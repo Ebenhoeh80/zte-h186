@@ -1,5 +1,7 @@
 # Setup and Configuration
 
+[English](en/Setup.md) | [Deutsch](de/Setup.md) | [Français](fr/Setup.md) | [Español](es/Setup.md)
+
 The ZTE H186 project provides multiple flexible and secure ways to supply connection credentials, depending on your deployment environment (CLI script, Home Assistant Custom Component, or Docker/daemon execution).
 
 ## Credential Methods

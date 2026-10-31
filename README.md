@@ -10,6 +10,8 @@
 [![Quality Scale: Bronze](https://img.shields.io/badge/Quality%20Scale-Bronze-brown.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internationalization-i18n)
 
+[English](README.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md)
+
 An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**. Reads real-time DSL line telemetry (sync rates, SNR margins, line attenuation, CRC/FEC error counters, transmission profile, and showtime uptime) directly from the modem's local web interface.
 
 ---

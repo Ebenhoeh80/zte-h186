@@ -1,5 +1,7 @@
 # Modem Request Protocol
 
+[English](en/Protocol.md) | [Deutsch](de/Protocol.md) | [Français](fr/Protocol.md) | [Español](es/Protocol.md)
+
 The client uses the modem's existing web UI session and makes a read-only DSL
 statistics request. The modem address and password are loaded from the local
 encrypted files described in [Setup](SETUP.md).
