@@ -234,7 +234,7 @@ export default function App() {
             {/* Download Release ZIP */}
             <a
               href="/api/download/release-zip"
-              download="zte-h186-v1.0.0.zip"
+              download="zte-h186-v1.2.1.zip"
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
               title="Release-Paket (v1.0.0.zip) herunterladen"
             >
@@ -1027,7 +1027,7 @@ export default function App() {
             ZTE H186 DSL Modem Home Assistant Integration · Copyright (C) 2026 Daniel Ebenhöh
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-slate-500">GPL-3.0-only</span>
+            <span className="text-slate-500">MIT</span>
             <span className="text-slate-500">HACS Quality Scale: Bronze</span>
           </div>
         </div>

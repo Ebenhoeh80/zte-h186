@@ -560,9 +560,9 @@ app.get('/api/brands/integration/zte_h186/:file', (req: Request, res: Response) 
 
 // API: Download Release ZIP
 app.get('/api/download/release-zip', (_req: Request, res: Response) => {
-  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.0.0.zip');
+  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.2.1.zip');
   if (fs.existsSync(zipPath)) {
-    res.download(zipPath, 'zte-h186-v1.0.0.zip');
+    res.download(zipPath, 'zte-h186-v1.2.1.zip');
   } else {
     res.status(404).send('ZIP archive not found');
   }

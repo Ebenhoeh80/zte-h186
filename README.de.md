@@ -6,7 +6,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/Ebenhoeh80/zte-h186)](https://github.com/Ebenhoeh80/zte-h186/releases)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Quality Scale: Bronze](https://img.shields.io/badge/Quality%20Scale-Bronze-brown.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internationalisierung-i18n)
 
@@ -54,7 +54,7 @@ Eine native, asynchrone Home Assistant Custom Integration für das **ZTE H186 DS
 
 ### Methode 2: Manuelle Installation
 
-1. Das Release-Archiv `zte-h186-v1.0.0.zip` herunterladen.
+1. Das Release-Archiv `zte-h186-v1.2.1.zip` herunterladen.
 2. Den Ordner `custom_components/zte_h186` in dein Home-Assistant-Verzeichnis kopieren:
    ```text
    /config/custom_components/zte_h186
@@ -96,5 +96,5 @@ Die Übersetzungen gelten automatisch für:
 
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der GNU General Public License v3.0 lizenziert – siehe [LICENSE](LICENSE).  
+Dieses Projekt ist unter der MIT-Lizenz lizenziert – siehe [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.

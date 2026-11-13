@@ -6,7 +6,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/Ebenhoeh80/zte-h186)](https://github.com/Ebenhoeh80/zte-h186/releases)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Quality Scale: Bronze](https://img.shields.io/badge/Quality%20Scale-Bronze-brown.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internationalization-i18n)
 
@@ -54,7 +54,7 @@ An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**
 
 ### Method 2: Manual Installation
 
-1. Download the latest `zte-h186-v1.0.0.zip` release archive.
+1. Download the latest `zte-h186-v1.2.1.zip` release archive.
 2. Copy the folder `custom_components/zte_h186` into your Home Assistant directory under:
    ```text
    /config/custom_components/zte_h186
@@ -138,5 +138,5 @@ To contribute additional translations, please see [CONTRIBUTING.md](CONTRIBUTING
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 – see [LICENSE](LICENSE).  
+This project is licensed under the MIT License – see [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.

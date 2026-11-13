@@ -2,7 +2,7 @@
 
 ```text
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 ```
 
 [English](../en/Setup.md) | [Deutsch](../de/Setup.md) | [Français](Setup.md) | [Español](../es/Setup.md)

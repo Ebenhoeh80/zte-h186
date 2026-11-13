@@ -3,7 +3,7 @@
 
 ```text
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 ```
 
 [English](#english) | [Deutsch](#deutsch) | [Français](#français) | [Español](#español)
@@ -18,7 +18,7 @@ Welcome to the central rules and governance documentation for the **ZTE H186 Hom
 
 | Rule Document | Description |
 |---|---|
-| [01_project_guidelines.md](01_project_guidelines.md) | Core repository rules, licensing (GPL-3.0), code conventions, and commits |
+| [01_project_guidelines.md](01_project_guidelines.md) | Core repository rules, licensing (MIT), code conventions, and commits |
 | [02_home_assistant_rules.md](02_home_assistant_rules.md) | Custom component architecture, manifest standards, Hassfest compliance, and config flows |
 | [03_four_languages_i18n_rules.md](03_four_languages_i18n_rules.md) | **Mandatory 4-Language Policy (en, de, fr, es)** for documentation and UI translations |
 | [04_security_and_ssrf_rules.md](04_security_and_ssrf_rules.md) | SSRF defense, network boundary validation, credential encryption (Age), and diagnostics sanitization |
@@ -35,7 +35,7 @@ Willkommen in der zentralen Regeldokumentation für das **ZTE H186 Home Assistan
 
 | Regelwerk | Beschreibung |
 |---|---|
-| [01_project_guidelines.md](01_project_guidelines.md) | Grundlegende Repository-Regeln, Lizenzvorgaben (GPL-3.0), Codekonventionen und Commits |
+| [01_project_guidelines.md](01_project_guidelines.md) | Grundlegende Repository-Regeln, Lizenzvorgaben (MIT), Codekonventionen und Commits |
 | [02_home_assistant_rules.md](02_home_assistant_rules.md) | Architektur von Custom Components, Manifest-Standards, Hassfest-Konformität und Config Flows |
 | [03_four_languages_i18n_rules.md](03_four_languages_i18n_rules.md) | **Verbindliche 4-Sprachen-Vorgabe (en, de, fr, es)** für Dokumentation und UI-Übersetzungen |
 | [04_security_and_ssrf_rules.md](04_security_and_ssrf_rules.md) | SSRF-Schutz, Netzwerkgrenzenprüfung, Credential-Verschlüsselung (Age) und Diagnose-Bereinigung |

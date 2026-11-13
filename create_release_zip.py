@@ -9,7 +9,7 @@ def create_zip():
     base_dir = Path(__file__).resolve().parent
     public_dir = base_dir / "public"
     public_dir.mkdir(exist_ok=True)
-    zip_path = public_dir / "zte-h186-v1.0.0.zip"
+    zip_path = public_dir / "zte-h186-v1.2.1.zip"
 
     files_to_include = [
         "icon.png",

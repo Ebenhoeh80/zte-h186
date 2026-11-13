@@ -3,7 +3,7 @@
 # zte-h186-stats
 #
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 #
 # Reads all 26 DSL line parameters from ZTE H186 modem
 

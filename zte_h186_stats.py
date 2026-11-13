@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 
 """Read DSL line statistics from a ZTE H186 modem (Full 26 parameters + HA JSON)."""
 

@@ -2,7 +2,7 @@
 
 ```text
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 ```
 
 [English](en/HomeAssistant.md) | [Deutsch](de/HomeAssistant.md) | [Français](fr/HomeAssistant.md) | [Español](es/HomeAssistant.md)
@@ -466,7 +466,7 @@ ungeprueft zu veroeffentlichen. Vor einem oeffentlichen Release:
    Eine reine Adresssuche ersetzt keine manuelle Inhaltspruefung.
 4. Bash-Ausgaben weder als Diagnosebeleg noch als Screenshot veroeffentlichen. Einen
    erforderlichen Fehlerbericht auf Kategorie, HTTP-Status und feste Phase begrenzen.
-5. Copyright-/SPDX-Zeilen unveraendert erhalten und die GPL-3.0-only-Lizenzpflichten
+5. Copyright-/SPDX-Zeilen unveraendert erhalten und die MIT-Lizenzpflichten
    fuer die verteilten Bestandteile beachten. Einen vollstaendigen Lizenztext im
    eigenstaendigen Release beilegen; diese Beschreibung ersetzt ihn nicht.
 
@@ -480,7 +480,7 @@ technische Schnittstellen, keine echten Zugangsdaten.
 - [Home Assistant: Template](https://www.home-assistant.io/integrations/template/)
 - [Home Assistant: Packages](https://www.home-assistant.io/docs/configuration/packages/)
 - [Home Assistant: Secrets](https://www.home-assistant.io/docs/configuration/secrets/)
-- [SPDX: GPL-3.0-only](https://spdx.org/licenses/GPL-3.0-only.html)
-- [GNU GPL Version 3: Lizenztext](https://www.gnu.org/licenses/gpl-3.0.html)
+- [SPDX: MIT](https://spdx.org/licenses/MIT.html)
+- [MIT License: Lizenztext](https://opensource.org/license/mit)
 
 Die Copyright- und SPDX-Kennzeichnung am Dokumentanfang ist unveraendert zu erhalten.

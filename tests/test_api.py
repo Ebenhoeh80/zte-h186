@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 
 """Comprehensive unit tests for the ZTE H186 Home Assistant API client."""
 

@@ -2,7 +2,7 @@
 
 ```text
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 ```
 
 Welcome to the technical documentation repository for the **ZTE H186 DSL Modem Integration**. In accordance with project governance, all documentation is available in four official languages:

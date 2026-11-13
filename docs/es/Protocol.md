@@ -2,7 +2,7 @@
 
 ```text
 # Copyright (C) 2026 Daniel Ebenhöh
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 ```
 
 [English](../en/Protocol.md) | [Deutsch](../de/Protocol.md) | [Français](../fr/Protocol.md) | [Español](Protocol.md)

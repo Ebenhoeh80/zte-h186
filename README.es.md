@@ -6,7 +6,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 [![GitHub Release](https://img.shields.io/github/v/release/Ebenhoeh80/zte-h186)](https://github.com/Ebenhoeh80/zte-h186/releases)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Quality Scale: Bronze](https://img.shields.io/badge/Quality%20Scale-Bronze-brown.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internacionalización-i18n)
 
@@ -63,5 +63,5 @@ Una integración personalizada asíncrona para el **módem DSL ZTE H186**. Lee t
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia Pública General GNU v3.0 – consulte [LICENSE](LICENSE).  
+Este proyecto está bajo la Licencia MIT – consulte [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
