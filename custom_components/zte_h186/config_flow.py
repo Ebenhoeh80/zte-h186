@@ -10,7 +10,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
+    OptionsFlowWithReload,
 )
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
@@ -178,12 +178,12 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlowWithReload:
         """Create the options flow."""
         return ZteH186OptionsFlowHandler()
 
 
-class ZteH186OptionsFlowHandler(OptionsFlow):
+class ZteH186OptionsFlowHandler(OptionsFlowWithReload):
     """Handle options for ZTE H186."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

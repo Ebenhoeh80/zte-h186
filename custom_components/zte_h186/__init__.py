@@ -40,7 +40,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> b
 
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 
@@ -80,8 +79,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> 
         coordinator = entry.runtime_data
         await coordinator.client.close()
     return unload_ok
-
-
-async def async_reload_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> None:
-    """Reload config entry after options change."""
-    await hass.config_entries.async_reload(entry.entry_id)

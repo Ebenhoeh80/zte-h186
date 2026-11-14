@@ -8,6 +8,11 @@
           "host": "Dirección IP o nombre de host",
           "username": "Nombre de usuario",
           "password": "Contraseña"
+        },
+        "data_description": {
+          "host": "La dirección IP LAN o el nombre de host del módem (predeterminado 192.168.10.2).",
+          "username": "El usuario de la interfaz web, normalmente «admin».",
+          "password": "La contraseña de la interfaz web del módem."
         }
       },
       "reconfigure": {

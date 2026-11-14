@@ -8,6 +8,11 @@
           "host": "IP-Adresse oder Hostname",
           "username": "Benutzername",
           "password": "Passwort"
+        },
+        "data_description": {
+          "host": "Die LAN-IP-Adresse oder der Hostname des Modems (Standard 192.168.10.2).",
+          "username": "Der Benutzer der Weboberfläche, meist 'admin'.",
+          "password": "Das Passwort der Weboberfläche des Modems."
         }
       },
       "reconfigure": {
