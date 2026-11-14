@@ -201,7 +201,9 @@ class ZteH186ApiClient:
                 f"Unable to reach modem at {self._base_url}: {err}"
             ) from err
 
-        session_token = self._decode_session_token(login_page_text)
+        # Validate that we reached the genuine login page (raises if the token is
+        # absent). The decoded token itself is NOT used during login (see below).
+        self._decode_session_token(login_page_text)
 
         # Step 2: Fetch login token (challenge)
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
@@ -219,11 +221,13 @@ class ZteH186ApiClient:
         # Step 3: Compute SHA-256 and submit login form
         pass_hash = hashlib.sha256((self._password + login_token).encode("utf-8")).hexdigest()
 
+        # Post exactly the three fields the modem's own webSubmitForm login uses.
+        # Adding _sessionTOKEN here makes the firmware hand out an UNauthorized SID,
+        # after which every protected page answers with 404 / SessionTimeout.
         login_payload = {
             "Username": self._username,
             "Password": pass_hash,
             "action": "login",
-            "_sessionTOKEN": session_token,
         }
 
         # Some ZTE firmware builds require the _TESTCOOKIESUPPORT cookie during login POST
