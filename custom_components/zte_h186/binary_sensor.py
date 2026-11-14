@@ -12,13 +12,13 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .api import ZteH186Data
-from .const import CONF_HOST, DOMAIN, MANUFACTURER, MODEL
-from .coordinator import ZteH186ConfigEntry, ZteH186DataUpdateCoordinator
+from .coordinator import ZteH186ConfigEntry
+from .entity import ZteH186Entity
+
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -52,41 +52,19 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZteH186BinarySensorEntityDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ZteH186ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up ZTE H186 binary sensors."""
     coordinator = entry.runtime_data
-    host = entry.data[CONF_HOST]
-
     async_add_entities(
-        ZteH186BinarySensor(coordinator, description, host)
-        for description in BINARY_SENSOR_DESCRIPTIONS
+        ZteH186BinarySensor(coordinator, description) for description in BINARY_SENSOR_DESCRIPTIONS
     )
 
 
-class ZteH186BinarySensor(CoordinatorEntity[ZteH186DataUpdateCoordinator], BinarySensorEntity):
+class ZteH186BinarySensor(ZteH186Entity, BinarySensorEntity):
     """Representation of a ZTE H186 binary sensor."""
 
     entity_description: ZteH186BinarySensorEntityDescription
-    _attr_has_entity_name = True
-
-    def __init__(
-        self,
-        coordinator: ZteH186DataUpdateCoordinator,
-        description: ZteH186BinarySensorEntityDescription,
-        host: str,
-    ) -> None:
-        """Initialize binary sensor."""
-        super().__init__(coordinator)
-        self.entity_description = description
-        self._attr_unique_id = f"{host.lower()}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, host.lower())},
-            manufacturer=MANUFACTURER,
-            model=MODEL,
-            name=f"ZTE H186 ({host})",
-            configuration_url=f"http://{host}",
-        )
 
     @property
     def is_on(self) -> bool | None:

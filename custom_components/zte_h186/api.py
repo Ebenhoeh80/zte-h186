@@ -97,6 +97,11 @@ class ZteH186ApiClient:
         self._sid: str | None = None
         self._lock = asyncio.Lock()
 
+    @property
+    def base_url(self) -> str:
+        """Return the resolved modem base URL (e.g. http://192.168.10.2)."""
+        return self._base_url
+
     @staticmethod
     def _format_base_url(host: str) -> str:
         """Format base URL, handling IPv6 bracket enclosure and scheme."""

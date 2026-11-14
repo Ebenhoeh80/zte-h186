@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -15,19 +14,20 @@ from homeassistant.components.sensor import (
 from homeassistant.const import (
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfDataRate,
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import ZteH186Data
-from .const import CONF_HOST, DOMAIN, MANUFACTURER, MODEL
-from .coordinator import ZteH186ConfigEntry, ZteH186DataUpdateCoordinator
+from .coordinator import ZteH186ConfigEntry
+from .entity import ZteH186Entity
+
+PARALLEL_UPDATES = 0
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -128,7 +128,7 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         key="downstream_power",
         translation_key="downstream_power",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="dBm",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:transmission-tower",
@@ -138,7 +138,7 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         key="upstream_power",
         translation_key="upstream_power",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="dBm",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:transmission-tower",
@@ -275,40 +275,19 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ZteH186ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up ZTE H186 sensor entities based on a config entry."""
     coordinator = entry.runtime_data
-    host = entry.data[CONF_HOST]
-
     async_add_entities(
-        ZteH186Sensor(coordinator, description, host) for description in SENSOR_DESCRIPTIONS
+        ZteH186Sensor(coordinator, description) for description in SENSOR_DESCRIPTIONS
     )
 
 
-class ZteH186Sensor(CoordinatorEntity[ZteH186DataUpdateCoordinator], SensorEntity):
+class ZteH186Sensor(ZteH186Entity, SensorEntity):
     """Representation of a ZTE H186 sensor."""
 
     entity_description: ZteH186SensorEntityDescription
-    _attr_has_entity_name = True
-
-    def __init__(
-        self,
-        coordinator: ZteH186DataUpdateCoordinator,
-        description: ZteH186SensorEntityDescription,
-        host: str,
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self.entity_description = description
-        self._attr_unique_id = f"{host.lower()}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, host.lower())},
-            manufacturer=MANUFACTURER,
-            model=MODEL,
-            name=f"ZTE H186 ({host})",
-            configuration_url=f"http://{host}",
-        )
 
     @property
     def native_value(self) -> StateType:
@@ -316,21 +295,3 @@ class ZteH186Sensor(CoordinatorEntity[ZteH186DataUpdateCoordinator], SensorEntit
         if self.coordinator.data is None:
             return None
         return self.entity_description.value_fn(self.coordinator.data)
-
-    @property
-    def entity_picture(self) -> str | None:
-        """Return the entity picture for the primary DSL status sensor."""
-        if self.entity_description.key == "dsl_status":
-            return f"/api/brands/integration/{DOMAIN}/icon.png"
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return all raw modem XML attributes on the primary status sensor."""
-        if (
-            self.entity_description.key == "dsl_status"
-            and self.coordinator.data
-            and self.coordinator.data.raw_values
-        ):
-            return dict(self.coordinator.data.raw_values)
-        return None

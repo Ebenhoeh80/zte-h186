@@ -82,8 +82,10 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
-            await self.async_set_unique_id(host.lower())
-            self._abort_if_unique_id_configured()
+            user_input[CONF_HOST] = host
+            # Prevent a second entry for the same modem without pinning the entry's
+            # unique_id to the IP (an IP is not a stable device identifier).
+            self._async_abort_entries_match({CONF_HOST: host})
 
             errors = await self._async_validate_input(user_input)
 
@@ -113,6 +115,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
+            user_input[CONF_HOST] = user_input[CONF_HOST].strip()
             combined_input = {**entry.data, **user_input}
             errors = await self._async_validate_input(combined_input)
 
