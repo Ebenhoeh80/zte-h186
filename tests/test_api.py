@@ -5,37 +5,18 @@
 
 import asyncio
 from dataclasses import is_dataclass
-import importlib.util
-from pathlib import Path
-import sys
 import unittest
 from unittest.mock import MagicMock
 
-# Provide lightweight mock for aiohttp if not available in current environment
-if "aiohttp" not in sys.modules:
-    mock_aiohttp = MagicMock()
-    mock_aiohttp.ClientError = type("ClientError", (Exception,), {})
-    mock_aiohttp.ClientTimeout = MagicMock()
-    mock_aiohttp.CookieJar = MagicMock()
-    mock_aiohttp.ClientSession = MagicMock()
-    sys.modules["aiohttp"] = mock_aiohttp
+import aiohttp
 
-# Load api.py standalone
-api_path = Path(__file__).resolve().parent.parent / "custom_components" / "zte_h186" / "api.py"
-spec = importlib.util.spec_from_file_location("custom_components.zte_h186.api", str(api_path))
-if spec is None or spec.loader is None:
-    raise ImportError(f"Cannot load module from {api_path}")
-api_mod = importlib.util.module_from_spec(spec)
-sys.modules["custom_components.zte_h186.api"] = api_mod
-spec.loader.exec_module(api_mod)
-
-ZteH186ApiClient = api_mod.ZteH186ApiClient
-ZteH186Data = api_mod.ZteH186Data
-ZteH186Error = api_mod.ZteH186Error
-ZteH186ConnectionError = api_mod.ZteH186ConnectionError
-ZteH186AuthError = api_mod.ZteH186AuthError
-ZteH186ProtocolError = api_mod.ZteH186ProtocolError
-
+from custom_components.zte_h186.api import (
+    ZteH186ApiClient,
+    ZteH186AuthError,
+    ZteH186ConnectionError,
+    ZteH186Data,
+    ZteH186ProtocolError,
+)
 
 SAMPLE_LOGIN_HTML = """
 <!DOCTYPE html>
@@ -430,6 +411,105 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(results[0].downstream_sync, 109.2)
         self.assertEqual(results[1].downstream_sync, 109.2)
         self.assertEqual(call_order, ["enter_call_1", "exit_call_1", "enter_call_2", "exit_call_2"])
+
+
+class _Resp:
+    """Minimal async context-manager response for handshake mocking."""
+
+    def __init__(self, status=200, text_data="", sid=None):
+        self.status = status
+        self._text = text_data
+        self.headers = MagicMock(
+            getall=MagicMock(return_value=[f"SID={sid}; path=/"] if sid else [])
+        )
+        self.cookies = {"SID": MagicMock(value=sid)} if sid else {}
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+    async def text(self, *args, **kwargs):
+        return self._text
+
+
+def _client(mock_session):
+    mock_session.closed = False
+    return ZteH186ApiClient("192.168.10.2", "admin", "secret", session=mock_session)
+
+
+class ApiErrorPathTests(unittest.IsolatedAsyncioTestCase):
+    """Coverage for the handshake error paths."""
+
+    async def test_login_connection_error(self):
+        """A network error during login raises ZteH186ConnectionError."""
+        mock_session = MagicMock()
+        mock_session.get.side_effect = aiohttp.ClientError("boom")
+        with self.assertRaises(ZteH186ConnectionError):
+            await _client(mock_session).async_login()
+
+    async def test_login_token_not_found(self):
+        """A login-token page without digits raises ZteH186ProtocolError."""
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "no-digits-here"),
+        ]
+        with self.assertRaises(ZteH186ProtocolError):
+            await _client(mock_session).async_login()
+
+    async def test_unauthorized_session_raises_auth_error(self):
+        """A primed status page without the DSL reference is an auth failure."""
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, "<html>login form</html>"),
+        ]
+        mock_session.post.return_value = _Resp(200, "", sid="sid_x")
+        with self.assertRaises(ZteH186AuthError):
+            await _client(mock_session).async_login()
+
+    async def test_missing_required_fields_when_up(self):
+        """Status=Up but missing rate fields raises ZteH186ProtocolError."""
+        xml = (
+            "<ajax_response_xml_root>"
+            "<IF_ERRORSTR>SUCC</IF_ERRORSTR>"
+            "<Instance><ParaName>Status</ParaName><ParaValue>Up</ParaValue></Instance>"
+            "</ajax_response_xml_root>"
+        )
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, '<html>"internet_dsl_interface_lua.lua"</html>'),
+            _Resp(200, xml),
+        ]
+        mock_session.post.return_value = _Resp(200, "", sid="sid_x")
+        with self.assertRaises(ZteH186ProtocolError):
+            await _client(mock_session).async_get_dsl_stats()
+
+    async def test_relogin_on_session_timeout(self):
+        """A SessionTimeout in the stats response triggers a re-login and retry."""
+        timeout_xml = (
+            "<ajax_response_xml_root><IF_ERRORSTR>SessionTimeout</IF_ERRORSTR>"
+            "</ajax_response_xml_root>"
+        )
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, '<html>"internet_dsl_interface_lua.lua"</html>'),
+            _Resp(200, timeout_xml),
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, '<html>"internet_dsl_interface_lua.lua"</html>'),
+            _Resp(200, SAMPLE_DSL_XML),
+        ]
+        mock_session.post.return_value = _Resp(200, "", sid="sid_x")
+        stats = await _client(mock_session).async_get_dsl_stats()
+        self.assertEqual(stats.dsl_status, "Up")
 
 
 if __name__ == "__main__":

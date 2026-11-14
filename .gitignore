@@ -40,3 +40,12 @@ yarn-error.log*
 # AI Studio scratch artifacts
 .aistudio/
 public/assets/aistudio/
+
+# Python virtual envs
+.venv/
+.venv-test/
+
+# Python test artifacts
+.coverage
+.pytest_cache/
+__pycache__/

@@ -1,9 +1,11 @@
 # Test & lint toolchain for the ZTE H186 integration.
-# Install with: pip install -r requirements_test.txt
-homeassistant
-pytest
-pytest-asyncio
+# pytest-homeassistant-custom-component pulls in the matching Home Assistant
+# version (and pytest + pytest-asyncio).
+#
+# NOTE for local use on Windows: Home Assistant does not run natively on Windows
+# (it imports the Unix-only `fcntl`). Run the test suite under WSL/Linux. The
+# pinned lru-dict also lacks a Windows cp313 wheel; Linux has manylinux wheels.
 pytest-homeassistant-custom-component
-aioresponses
+pytest-cov
 ruff
 mypy
