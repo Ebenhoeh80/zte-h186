@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import cors from 'cors';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -11,9 +10,13 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
+// Bind to loopback by default so the dashboard is not exposed to the LAN.
+// Set HOST=0.0.0.0 explicitly to expose it on purpose.
+const HOST = process.env.HOST || '127.0.0.1';
 const isProd = process.env.NODE_ENV === 'production';
 
-app.use(cors());
+// No CORS: the dashboard is served same-origin by this process, so cross-origin
+// access is neither needed nor desirable (it would widen the attack surface).
 app.use(express.json());
 
 // Simulation state to allow realistic fluctuations in demo mode
@@ -268,10 +271,19 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
   const {
     host = process.env.ZTE_MODEM_HOST || '192.168.10.2',
     username = process.env.ZTE_MODEM_USER || 'admin',
-    password = process.env.ZTE_MODEM_PASSWORD || '',
     simulate = true,
     preset = 'vdsl100'
   } = req.body;
+
+  // The env password is only used when the requested host matches the configured
+  // ZTE_MODEM_HOST. Otherwise a caller could coax the server into sending
+  // SHA-256(envPassword + attackerToken) to an arbitrary (private) host and run
+  // an offline dictionary attack against the hash (password-hash oracle).
+  const envHost = process.env.ZTE_MODEM_HOST;
+  let password: string = typeof req.body.password === 'string' ? req.body.password : '';
+  if (!password && envHost && host === envHost) {
+    password = process.env.ZTE_MODEM_PASSWORD || '';
+  }
 
   if (simulate) {
     return res.json(generateSimulatedData(preset));
@@ -290,14 +302,13 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
     const baseUrl = validation.baseUrl;
 
     // Step 1: GET /
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
+    // redirect: 'manual' on every request prevents a validated private host from
+    // redirecting us to a forbidden target (169.254.169.254, loopback, external) = SSRF.
     const rootResp = await fetch(`${baseUrl}/`, {
-      signal: controller.signal,
+      signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
       headers: { 'User-Agent': 'Mozilla/5.0 (HomeAssistant/ZTE-H186)' },
     });
-    clearTimeout(timeout);
 
     if (!rootResp.ok) {
       throw new Error(`Modem returned HTTP ${rootResp.status}`);
@@ -315,6 +326,8 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
 
     // Step 2: GET logintoken
     const tokenResp = await fetch(`${baseUrl}/function_module/login_module/login_page/logintoken_lua.lua`, {
+      signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
       headers: { Referer: `${baseUrl}/` },
     });
     const tokenText = await tokenResp.text();
@@ -340,6 +353,7 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
         Referer: `${baseUrl}/`,
       },
       redirect: 'manual',
+      signal: AbortSignal.timeout(8000),
     });
 
     const setCookie = loginResp.headers.get('set-cookie') || '';
@@ -353,6 +367,8 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
     // Step 4: GET Status page
     const statusUrl = `${baseUrl}/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp`;
     await fetch(statusUrl, {
+      signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
       headers: {
         Cookie: `SID=${sid}`,
         Referer: `${baseUrl}/`,
@@ -362,6 +378,8 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
     // Step 5: GET XML Stats
     const xmlUrl = `${baseUrl}/common_page/internet_dsl_interface_lua.lua?_=${Date.now()}`;
     const xmlResp = await fetch(xmlUrl, {
+      signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
       headers: {
         Cookie: `SID=${sid}`,
         Referer: statusUrl,
@@ -549,13 +567,16 @@ app.get('/api/hacs/files', (_req: Request, res: Response) => {
 
 // API: Brands integration proxy (matching Home Assistant core route)
 app.get('/api/brands/integration/zte_h186/:file', (req: Request, res: Response) => {
-  const file = req.params.file;
-  const brandPath = path.join(__dirname, 'custom_components', 'zte_h186', 'brand', file);
-  if (fs.existsSync(brandPath)) {
-    res.sendFile(brandPath);
-  } else {
-    res.status(404).send('Brand image not found');
+  // Strip any path components and allow only plain image file names, so a
+  // request like `..%2F..%2Fserver.ts` cannot escape the brand directory.
+  const file = path.basename(req.params.file);
+  if (!/^[\w.-]+\.(png|svg|ico)$/.test(file)) {
+    return res.status(404).send('Brand image not found');
   }
+  const brandDir = path.join(__dirname, 'custom_components', 'zte_h186', 'brand');
+  res.sendFile(file, { root: brandDir }, (err) => {
+    if (err) res.status(404).send('Brand image not found');
+  });
 });
 
 // API: Download Release ZIP
@@ -584,8 +605,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ZTE H186 Server & React Dashboard running on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`ZTE H186 Server & React Dashboard running on http://${HOST}:${PORT}`);
   });
 }
 
