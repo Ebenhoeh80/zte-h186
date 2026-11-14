@@ -83,9 +83,11 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
         icon="mdi:gauge",
-        value_fn=lambda data: round((data.downstream_sync / data.downstream_max) * 100, 1)
-        if data.downstream_max and data.downstream_max > 0
-        else None,
+        value_fn=lambda data: (
+            round((data.downstream_sync / data.downstream_max) * 100, 1)
+            if data.downstream_max and data.downstream_max > 0
+            else None
+        ),
     ),
     # --- Line Noise & Attenuation ---
     ZteH186SensorEntityDescription(
@@ -280,8 +282,7 @@ async def async_setup_entry(
     host = entry.data[CONF_HOST]
 
     async_add_entities(
-        ZteH186Sensor(coordinator, description, host)
-        for description in SENSOR_DESCRIPTIONS
+        ZteH186Sensor(coordinator, description, host) for description in SENSOR_DESCRIPTIONS
     )
 
 

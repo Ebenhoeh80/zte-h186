@@ -1,0 +1,9 @@
+# Test & lint toolchain for the ZTE H186 integration.
+# Install with: pip install -r requirements_test.txt
+homeassistant
+pytest
+pytest-asyncio
+pytest-homeassistant-custom-component
+aioresponses
+ruff
+mypy

@@ -44,9 +44,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZteH186BinarySensorEntityDescription, ...] = (
         translation_key="line_noise_warning",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
-        is_on_fn=lambda data: bool(
-            data.downstream_snr < 6.0 or data.upstream_snr < 6.0
-        ),
+        is_on_fn=lambda data: bool(data.downstream_snr < 6.0 or data.upstream_snr < 6.0),
     ),
 )
 
@@ -66,9 +64,7 @@ async def async_setup_entry(
     )
 
 
-class ZteH186BinarySensor(
-    CoordinatorEntity[ZteH186DataUpdateCoordinator], BinarySensorEntity
-):
+class ZteH186BinarySensor(CoordinatorEntity[ZteH186DataUpdateCoordinator], BinarySensorEntity):
     """Representation of a ZTE H186 binary sensor."""
 
     entity_description: ZteH186BinarySensorEntityDescription

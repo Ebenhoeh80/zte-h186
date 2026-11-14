@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 import unittest
-import xml.etree.ElementTree as ET
 
-from zte_h186_stats import extract_xml, xml_values, normalize_to_ha
+from zte_h186_stats import extract_xml, normalize_to_ha, xml_values
 
 SAMPLE_ROUTER_XML = """
 <ajax_response_xml_root>

@@ -9,7 +9,7 @@ import importlib.util
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 # Provide lightweight mock for aiohttp if not available in current environment
 if "aiohttp" not in sys.modules:
@@ -211,7 +211,9 @@ class TestZteH186ApiClient(unittest.TestCase):
     def test_extract_xml_invalid_syntax(self):
         """Test error raised when XML contains broken syntax."""
         with self.assertRaises(ZteH186ProtocolError):
-            ZteH186ApiClient._extract_xml_values("<ajax_response_xml_root><unclosed></ajax_response_xml_root>")
+            ZteH186ApiClient._extract_xml_values(
+                "<ajax_response_xml_root><unclosed></ajax_response_xml_root>"
+            )
 
     def test_lock_initialization(self):
         """Test that asyncio.Lock is properly initialized to prevent session collisions."""
@@ -377,7 +379,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(stats.modulation, "None")
 
     async def test_concurrent_requests_serialized_by_lock(self):
-        """Test that multiple concurrent requests are safely executed under lock without race conditions."""
+        """Concurrent requests are serialized by the lock without race conditions."""
         mock_session = MagicMock()
 
         call_order = []

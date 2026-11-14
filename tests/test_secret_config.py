@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 import ipaddress
+from pathlib import Path
 import tempfile
 import unittest
-from pathlib import Path
 
 from zte_h186_stats import RouterError, find_secret, modem_url_from_ip
 
@@ -16,9 +16,7 @@ class SecretConfigTests(unittest.TestCase):
 
     def test_ipv6_secret_is_bracketed(self):
         address = ipaddress.ip_address(bytes.fromhex("20010db8000000000000000000000001"))
-        self.assertEqual(
-            modem_url_from_ip(address.compressed.encode()), f"http://[{address}]"
-        )
+        self.assertEqual(modem_url_from_ip(address.compressed.encode()), f"http://[{address}]")
 
     def test_invalid_address_is_rejected(self):
         with self.assertRaises(RouterError):
@@ -34,9 +32,11 @@ class SecretConfigTests(unittest.TestCase):
             self.assertEqual(find_secret(secrets_dir, "zte-ipaddress-*.age"), newer)
 
     def test_missing_secret_is_reported(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with self.assertRaisesRegex(RouterError, "secrets/zte-ipaddress"):
-                find_secret(Path(temp_dir), "zte-ipaddress-*.age")
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+            self.assertRaisesRegex(RouterError, "secrets/zte-ipaddress"),
+        ):
+            find_secret(Path(temp_dir), "zte-ipaddress-*.age")
 
 
 if __name__ == "__main__":

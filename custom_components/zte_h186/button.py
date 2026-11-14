@@ -5,7 +5,6 @@ from __future__ import annotations
 from homeassistant.components.button import (
     ButtonDeviceClass,
     ButtonEntity,
-    ButtonEntityDescription,
 )
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -29,9 +28,7 @@ async def async_setup_entry(
     async_add_entities([ZteH186RefreshButton(coordinator, host)])
 
 
-class ZteH186RefreshButton(
-    CoordinatorEntity[ZteH186DataUpdateCoordinator], ButtonEntity
-):
+class ZteH186RefreshButton(CoordinatorEntity[ZteH186DataUpdateCoordinator], ButtonEntity):
     """Button to manually poll the ZTE H186 modem immediately."""
 
     _attr_has_entity_name = True
@@ -39,9 +36,7 @@ class ZteH186RefreshButton(
     _attr_device_class = ButtonDeviceClass.UPDATE
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(
-        self, coordinator: ZteH186DataUpdateCoordinator, host: str
-    ) -> None:
+    def __init__(self, coordinator: ZteH186DataUpdateCoordinator, host: str) -> None:
         """Initialize button."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{host.lower()}_refresh_stats"

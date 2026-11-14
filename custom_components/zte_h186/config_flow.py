@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -15,6 +13,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 
 from .api import (
     ZteH186ApiClient,
@@ -77,9 +76,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return errors
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
@@ -100,9 +97,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
-        schema = self.add_suggested_values_to_schema(
-            STEP_USER_DATA_SCHEMA, user_input or {}
-        )
+        schema = self.add_suggested_values_to_schema(STEP_USER_DATA_SCHEMA, user_input or {})
 
         return self.async_show_form(
             step_id="user",
@@ -131,15 +126,14 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_HOST, default=entry.data.get(CONF_HOST)): cv.string,
                 vol.Required(
-                    CONF_USERNAME, default=entry.data.get(CONF_USERNAME, DEFAULT_USERNAME)
+                    CONF_USERNAME,
+                    default=entry.data.get(CONF_USERNAME, DEFAULT_USERNAME),
                 ): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
             }
         )
 
-        schema = self.add_suggested_values_to_schema(
-            reconfigure_schema, user_input or {}
-        )
+        schema = self.add_suggested_values_to_schema(reconfigure_schema, user_input or {})
 
         return self.async_show_form(
             step_id="reconfigure",
@@ -157,9 +151,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
 class ZteH186OptionsFlowHandler(OptionsFlow):
     """Handle options for ZTE H186."""
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

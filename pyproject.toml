@@ -3,7 +3,7 @@ name = "zte-h186-dsl-statistics"
 version = "1.2.1"
 description = "Read DSL line statistics from a ZTE H186 modem"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Daniel Ebenhöh" }]
@@ -18,3 +18,29 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "RUF", "PT", "C4", "RET", "PIE", "LOG"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
+known-first-party = ["custom_components"]
+
+[tool.ruff.lint.per-file-ignores]
+# The existing tests still use unittest-style asserts; migrated with the HA test suite.
+"tests/*" = ["PT009", "PT027", "B011"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_configs = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
