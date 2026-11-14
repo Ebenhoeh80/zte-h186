@@ -70,7 +70,17 @@
       "upstream_power": { "name": "Upstream Power" },
       "profile": { "name": "DSL Profile" },
       "modulation": { "name": "Modulation Standard" },
-      "dsl_status": { "name": "DSL Status" },
+      "dsl_status": {
+        "name": "DSL Status",
+        "state": {
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "initializing": "Initializing",
+          "idle": "Idle",
+          "no_signal": "No signal",
+          "disabled": "Disabled"
+        }
+      },
       "data_path": { "name": "Data Path Mode" },
       "link_encapsulation": { "name": "Link Encapsulation" },
       "showtime": { "name": "DSL Showtime (Uptime)" },
@@ -91,6 +101,20 @@
     },
     "button": {
       "refresh_stats": { "name": "Refresh DSL Stats Now" }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "The ZTE H186 modem at {host} rejected the stored credentials. Please re-authenticate."
+    },
+    "cannot_connect": {
+      "message": "Could not connect to the ZTE H186 modem at {host}. Check that it is reachable."
+    },
+    "update_timeout": {
+      "message": "Timed out while fetching DSL statistics from the ZTE H186 modem at {host}."
+    },
+    "protocol_error": {
+      "message": "The ZTE H186 modem returned an unexpected response: {error}"
     }
   }
 }

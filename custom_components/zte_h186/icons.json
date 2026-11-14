@@ -1,0 +1,35 @@
+{
+  "entity": {
+    "sensor": {
+      "downstream_capacity_ratio": { "default": "mdi:gauge" },
+      "downstream_power": { "default": "mdi:transmission-tower" },
+      "upstream_power": { "default": "mdi:transmission-tower" },
+      "profile": { "default": "mdi:tag-outline" },
+      "modulation": { "default": "mdi:router-network" },
+      "dsl_status": {
+        "default": "mdi:check-network-outline",
+        "state": {
+          "connected": "mdi:check-network-outline",
+          "disconnected": "mdi:close-network-outline",
+          "initializing": "mdi:sync",
+          "idle": "mdi:network-off-outline",
+          "no_signal": "mdi:network-strength-off-outline",
+          "disabled": "mdi:network-off"
+        }
+      },
+      "data_path": { "default": "mdi:transit-connection-variant" },
+      "link_encapsulation": { "default": "mdi:layers-outline" },
+      "downstream_interleave_depth": { "default": "mdi:sort-numeric-variant" },
+      "upstream_interleave_depth": { "default": "mdi:sort-numeric-variant" },
+      "downstream_inp": { "default": "mdi:shield-check-outline" },
+      "upstream_inp": { "default": "mdi:shield-check-outline" },
+      "downstream_crc": { "default": "mdi:alert-circle-outline" },
+      "upstream_crc": { "default": "mdi:alert-circle-outline" },
+      "downstream_fec": { "default": "mdi:wrench-outline" },
+      "upstream_fec": { "default": "mdi:wrench-outline" }
+    },
+    "button": {
+      "refresh_stats": { "default": "mdi:refresh" }
+    }
+  }
+}

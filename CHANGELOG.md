@@ -5,6 +5,32 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-14
+
+This release takes the integration to the Home Assistant **Gold** quality scale.
+
+### Added
+- **Icon translations** (`icons.json`): all entity icons are now defined
+  centrally per translation key, including per-state icons for the DSL status.
+- **Translated exceptions**: coordinator update failures (auth, connection,
+  timeout, protocol) now raise localized messages via `translation_key` in all
+  four languages.
+- **DSL status is now an enum sensor**: the raw modem value is normalized to a
+  fixed, localized option set (`connected`, `disconnected`, `initializing`,
+  `idle`, `no_signal`, `disabled`), with a safe fallback so the state is always
+  valid. The raw value remains available in Diagnostics.
+- `quality_scale.yaml` documenting the status of every quality-scale rule.
+- Expanded documentation: supported devices, supported functions, data-update
+  behavior, use-case automation examples, known limitations, troubleshooting,
+  and removal instructions.
+
+### Changed
+- Manifest quality scale raised from **bronze** to **gold**.
+- The refresh button no longer uses the misleading `update` device class; it now
+  carries a proper refresh icon via `icons.json`.
+- README entity IDs corrected (the legacy `<ip>` segment is no longer part of the
+  entity IDs after the 1.3.0 registry migration).
+
 ## [1.3.0] - 2026-11-14
 
 This release repairs a broken login, hardens the companion web server, and

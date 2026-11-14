@@ -17,3 +17,22 @@ DEFAULT_USERNAME: Final = "admin"
 DEFAULT_SCAN_INTERVAL: Final = 60  # seconds
 MIN_SCAN_INTERVAL: Final = 15  # seconds
 MAX_SCAN_INTERVAL: Final = 600  # seconds
+
+# Normalized DSL line status (fixed enum option set for the status sensor).
+# The raw modem value is kept verbatim in ZteH186Data.dsl_status; only the
+# sensor presents it as one of these translated options.
+DSL_STATUS_CONNECTED: Final = "connected"
+DSL_STATUS_DISCONNECTED: Final = "disconnected"
+DSL_STATUS_INITIALIZING: Final = "initializing"
+DSL_STATUS_IDLE: Final = "idle"
+DSL_STATUS_NO_SIGNAL: Final = "no_signal"
+DSL_STATUS_DISABLED: Final = "disabled"
+
+DSL_STATUS_OPTIONS: Final[list[str]] = [
+    DSL_STATUS_CONNECTED,
+    DSL_STATUS_DISCONNECTED,
+    DSL_STATUS_INITIALIZING,
+    DSL_STATUS_IDLE,
+    DSL_STATUS_NO_SIGNAL,
+    DSL_STATUS_DISABLED,
+]

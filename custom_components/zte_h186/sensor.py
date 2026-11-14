@@ -24,10 +24,45 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .api import ZteH186Data
+from .const import (
+    DSL_STATUS_CONNECTED,
+    DSL_STATUS_DISABLED,
+    DSL_STATUS_DISCONNECTED,
+    DSL_STATUS_IDLE,
+    DSL_STATUS_INITIALIZING,
+    DSL_STATUS_NO_SIGNAL,
+    DSL_STATUS_OPTIONS,
+)
 from .coordinator import ZteH186ConfigEntry
 from .entity import ZteH186Entity
 
 PARALLEL_UPDATES = 0
+
+# Maps the modem's raw DSL "Status" string to a fixed enum option. Normalization
+# strips case, spaces and dashes; anything unrecognized is reported as
+# "disconnected" (the line is not in Showtime), so the enum state is always valid.
+_DSL_STATUS_MAP: dict[str, str] = {
+    "up": DSL_STATUS_CONNECTED,
+    "connected": DSL_STATUS_CONNECTED,
+    "showtime": DSL_STATUS_CONNECTED,
+    "down": DSL_STATUS_DISCONNECTED,
+    "disconnected": DSL_STATUS_DISCONNECTED,
+    "idle": DSL_STATUS_IDLE,
+    "disabled": DSL_STATUS_DISABLED,
+    "nosignal": DSL_STATUS_NO_SIGNAL,
+}
+
+
+def _normalize_dsl_status(raw: str | None) -> str | None:
+    """Return the raw modem status as one of DSL_STATUS_OPTIONS (or None)."""
+    if raw is None:
+        return None
+    token = raw.strip().lower().replace(" ", "").replace("-", "").replace("_", "")
+    if token in _DSL_STATUS_MAP:
+        return _DSL_STATUS_MAP[token]
+    if any(k in token for k in ("init", "train", "handshake", "establish", "config")):
+        return DSL_STATUS_INITIALIZING
+    return DSL_STATUS_DISCONNECTED
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -82,7 +117,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:gauge",
         value_fn=lambda data: (
             round((data.downstream_sync / data.downstream_max) * 100, 1)
             if data.downstream_sync is not None and data.downstream_max
@@ -131,7 +165,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:transmission-tower",
         value_fn=lambda data: data.downstream_power,
     ),
     ZteH186SensorEntityDescription(
@@ -141,40 +174,36 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:transmission-tower",
         value_fn=lambda data: data.upstream_power,
     ),
     # --- Line Profile & Modulation ---
     ZteH186SensorEntityDescription(
         key="profile",
         translation_key="profile",
-        icon="mdi:tag-outline",
         value_fn=lambda data: data.profile,
     ),
     ZteH186SensorEntityDescription(
         key="modulation",
         translation_key="modulation",
-        icon="mdi:router-network",
         value_fn=lambda data: data.modulation,
     ),
     ZteH186SensorEntityDescription(
         key="dsl_status",
         translation_key="dsl_status",
-        icon="mdi:check-network-outline",
-        value_fn=lambda data: data.dsl_status,
+        device_class=SensorDeviceClass.ENUM,
+        options=DSL_STATUS_OPTIONS,
+        value_fn=lambda data: _normalize_dsl_status(data.dsl_status),
     ),
     ZteH186SensorEntityDescription(
         key="data_path",
         translation_key="data_path",
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:transit-connection-variant",
         value_fn=lambda data: data.data_path,
     ),
     ZteH186SensorEntityDescription(
         key="link_encapsulation",
         translation_key="link_encapsulation",
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:layers-outline",
         value_fn=lambda data: data.link_encapsulation,
     ),
     # --- Uptime / Showtime ---
@@ -192,14 +221,12 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         key="downstream_interleave_depth",
         translation_key="downstream_interleave_depth",
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:sort-numeric-variant",
         value_fn=lambda data: data.downstream_interleave_depth,
     ),
     ZteH186SensorEntityDescription(
         key="upstream_interleave_depth",
         translation_key="upstream_interleave_depth",
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:sort-numeric-variant",
         value_fn=lambda data: data.upstream_interleave_depth,
     ),
     ZteH186SensorEntityDescription(
@@ -224,7 +251,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         native_unit_of_measurement="symbols",
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:shield-check-outline",
         value_fn=lambda data: data.downstream_inp,
     ),
     ZteH186SensorEntityDescription(
@@ -233,7 +259,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         native_unit_of_measurement="symbols",
         suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:shield-check-outline",
         value_fn=lambda data: data.upstream_inp,
     ),
     # --- Error Counters ---
@@ -242,7 +267,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         translation_key="downstream_crc",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
         value_fn=lambda data: data.downstream_crc,
     ),
     ZteH186SensorEntityDescription(
@@ -250,7 +274,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         translation_key="upstream_crc",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:alert-circle-outline",
         value_fn=lambda data: data.upstream_crc,
     ),
     ZteH186SensorEntityDescription(
@@ -258,7 +281,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         translation_key="downstream_fec",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:wrench-outline",
         value_fn=lambda data: data.downstream_fec,
     ),
     ZteH186SensorEntityDescription(
@@ -266,7 +288,6 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         translation_key="upstream_fec",
         state_class=SensorStateClass.TOTAL_INCREASING,
         entity_category=EntityCategory.DIAGNOSTIC,
-        icon="mdi:wrench-outline",
         value_fn=lambda data: data.upstream_fec,
     ),
 )

@@ -7,9 +7,33 @@ from collections.abc import Callable
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.zte_h186.const import DOMAIN
+from custom_components.zte_h186.const import DOMAIN, DSL_STATUS_OPTIONS
+from custom_components.zte_h186.sensor import _normalize_dsl_status
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("Up", "connected"),
+        ("showtime", "connected"),
+        ("Down", "disconnected"),
+        ("Idle", "idle"),
+        ("No Signal", "no_signal"),
+        ("Disabled", "disabled"),
+        ("Initializing", "initializing"),
+        ("Handshake", "initializing"),
+        ("something-weird", "disconnected"),
+        (None, None),
+    ],
+)
+def test_normalize_dsl_status(raw: str | None, expected: str | None) -> None:
+    """Every raw modem status maps to a valid enum option (or None)."""
+    result = _normalize_dsl_status(raw)
+    assert result == expected
+    assert result is None or result in DSL_STATUS_OPTIONS
 
 
 def _state_getter(hass: HomeAssistant, entry: MockConfigEntry) -> Callable[[str, str], str | None]:
@@ -37,7 +61,8 @@ async def test_sensor_states_line_up(
     assert get("sensor", "downstream_sync") == "116.798"
     assert get("sensor", "upstream_sync") == "36.999"
     assert get("sensor", "downstream_snr") == "10.3"
-    assert get("sensor", "dsl_status") == "Up"
+    # dsl_status is an enum sensor: the raw "Up" is normalized to "connected".
+    assert get("sensor", "dsl_status") == "connected"
     assert get("sensor", "modulation") == "VDSL2_Vectoring"
     assert get("binary_sensor", "dsl_link") == STATE_ON
     assert get("binary_sensor", "line_noise_warning") == STATE_OFF
@@ -59,7 +84,7 @@ async def test_sensor_states_line_down_report_unknown(
     assert get("sensor", "downstream_sync") == STATE_UNKNOWN
     assert get("sensor", "downstream_snr") == STATE_UNKNOWN
     assert get("sensor", "downstream_capacity_ratio") == STATE_UNKNOWN
-    assert get("sensor", "dsl_status") == "Down"
+    assert get("sensor", "dsl_status") == "disconnected"
     # SNR unknown must not falsely trip the low-SNR warning
     assert get("binary_sensor", "line_noise_warning") == STATE_UNKNOWN
     assert get("binary_sensor", "dsl_link") == STATE_OFF

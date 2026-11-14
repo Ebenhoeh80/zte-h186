@@ -18,7 +18,7 @@ from .api import (
     ZteH186Data,
     ZteH186Error,
 )
-from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import CONF_HOST, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,15 +54,32 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
 
     async def _async_update_data(self) -> ZteH186Data:
         """Fetch data from ZTE H186."""
+        host = self.config_entry.data[CONF_HOST]
         try:
             async with asyncio.timeout(30):
                 return await self.client.async_get_dsl_stats()
         except ZteH186AuthError as err:
             # Triggers Home Assistant's reauth flow instead of retrying forever.
-            raise ConfigEntryAuthFailed(f"Authentication failed for ZTE modem: {err}") from err
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="auth_failed",
+                translation_placeholders={"host": host},
+            ) from err
         except TimeoutError as err:
-            raise UpdateFailed("Timed out fetching data from the ZTE modem") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="update_timeout",
+                translation_placeholders={"host": host},
+            ) from err
         except ZteH186ConnectionError as err:
-            raise UpdateFailed(f"Connection error to ZTE modem: {err}") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="cannot_connect",
+                translation_placeholders={"host": host},
+            ) from err
         except ZteH186Error as err:
-            raise UpdateFailed(f"Protocol error updating ZTE modem data: {err}") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="protocol_error",
+                translation_placeholders={"error": str(err)},
+            ) from err

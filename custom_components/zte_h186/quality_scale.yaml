@@ -1,0 +1,94 @@
+# Home Assistant Integration Quality Scale status for zte_h186.
+# https://developers.home-assistant.io/docs/core/integration-quality-scale/
+rules:
+  # --- Bronze ---
+  action-setup:
+    status: exempt
+    comment: No custom service actions are registered.
+  appropriate-polling: done
+  brands:
+    status: exempt
+    comment: Distributed via HACS, not submitted to the core brands repository; icon.png is shipped with the integration.
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency:
+    status: done
+    comment: No third-party requirements; uses Home Assistant's bundled aiohttp.
+  docs-actions:
+    status: exempt
+    comment: No custom service actions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  entity-event-setup:
+    status: done
+    comment: Entities derive from CoordinatorEntity, which manages subscription in async_added_to_hass.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # --- Silver ---
+  action-exceptions:
+    status: exempt
+    comment: No custom service actions; coordinator update errors use translated UpdateFailed/ConfigEntryAuthFailed.
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage:
+    status: done
+    comment: Pytest suite with CI gate at 90% (currently ~92%).
+
+  # --- Gold ---
+  devices: done
+  diagnostics: done
+  discovery-update-info:
+    status: exempt
+    comment: No network discovery; the modem is reached by a user-provided management IP.
+  discovery:
+    status: exempt
+    comment: The H186 exposes no reliable zeroconf/SSDP/DHCP signature to key on; setup is manual by design.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: A single static modem device per config entry.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default:
+    status: exempt
+    comment: All metrics come from one request with no extra polling cost; verbose framing metrics are placed in the Diagnostic category rather than disabled.
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues:
+    status: exempt
+    comment: The only user-actionable recovery is credential re-entry, already handled by the re-authentication flow.
+  stale-devices:
+    status: exempt
+    comment: The single device is removed together with its config entry.
+
+  # --- Platinum ---
+  async-dependency:
+    status: done
+    comment: Fully async client built on aiohttp; no synchronous I/O libraries.
+  inject-websession:
+    status: todo
+    comment: The client owns its aiohttp session to manage the modem's SID cookie lifecycle; could be migrated to async_get_clientsession.
+  strict-typing:
+    status: todo
+    comment: Typed throughout and mypy-configured; full strict-typing verification and a py.typed marker are not yet in place.

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from homeassistant.components.button import (
-    ButtonDeviceClass,
     ButtonEntity,
     ButtonEntityDescription,
 )
@@ -19,7 +18,6 @@ PARALLEL_UPDATES = 1
 REFRESH_BUTTON = ButtonEntityDescription(
     key="refresh_stats",
     translation_key="refresh_stats",
-    device_class=ButtonDeviceClass.UPDATE,
     entity_category=EntityCategory.DIAGNOSTIC,
 )
 

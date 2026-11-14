@@ -70,7 +70,17 @@
       "upstream_power": { "name": "Upstream Ausgangsleistung" },
       "profile": { "name": "DSL-Profil" },
       "modulation": { "name": "Modulationsstandard" },
-      "dsl_status": { "name": "DSL-Status" },
+      "dsl_status": {
+        "name": "DSL-Status",
+        "state": {
+          "connected": "Verbunden",
+          "disconnected": "Getrennt",
+          "initializing": "Initialisierung",
+          "idle": "Inaktiv",
+          "no_signal": "Kein Signal",
+          "disabled": "Deaktiviert"
+        }
+      },
       "data_path": { "name": "Datenpfad (Fast/Interleaved)" },
       "link_encapsulation": { "name": "Link-Kapselung" },
       "showtime": { "name": "DSL-Showtime (Laufzeit)" },
@@ -91,6 +101,20 @@
     },
     "button": {
       "refresh_stats": { "name": "DSL-Werte jetzt abfragen" }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "Das ZTE H186 Modem unter {host} hat die gespeicherten Zugangsdaten abgelehnt. Bitte erneut authentifizieren."
+    },
+    "cannot_connect": {
+      "message": "Verbindung zum ZTE H186 Modem unter {host} nicht möglich. Bitte Erreichbarkeit prüfen."
+    },
+    "update_timeout": {
+      "message": "Zeitüberschreitung beim Abruf der DSL-Statistiken vom ZTE H186 Modem unter {host}."
+    },
+    "protocol_error": {
+      "message": "Das ZTE H186 Modem hat eine unerwartete Antwort geliefert: {error}"
     }
   }
 }
