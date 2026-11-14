@@ -54,7 +54,7 @@ An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**
 
 ### Method 2: Manual Installation
 
-1. Download the latest `zte-h186-v1.2.1.zip` release archive.
+1. Download the latest `zte-h186-v1.3.0.zip` release archive.
 2. Copy the folder `custom_components/zte_h186` into your Home Assistant directory under:
    ```text
    /config/custom_components/zte_h186

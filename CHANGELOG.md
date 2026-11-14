@@ -5,6 +5,54 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-11-14
+
+This release repairs a broken login, hardens the companion web server, and
+modernizes the integration toward the Home Assistant Silver quality scale.
+
+### ⚠️ Breaking changes
+- **Minimum Home Assistant version is now 2025.8** (`OptionsFlowWithReload`,
+  `AddConfigEntryEntitiesCallback`, entity-registry migration).
+- **Entity unique IDs and the device identity are now based on the config entry,
+  not the modem IP.** Existing entities and the device are migrated automatically
+  on upgrade, so history is preserved; the device is now named "ZTE H186" without
+  the IP suffix.
+- **Missing line metrics report "unknown" instead of 0.** While the line is
+  down/training, SNR, attenuation, power, profile and modulation are now unknown
+  rather than a misleading `0.0` / `"None"`.
+- Removed the raw-XML attribute dump from the DSL status sensor (recorder bloat);
+  the full raw values remain available via Diagnostics.
+- `showtime` is no longer a `TOTAL_INCREASING` statistic (uptime resets on resync).
+
+### Fixed
+- **Login was completely broken:** the client sent a stray `_sessionTOKEN` field,
+  so the modem issued an unauthorized session and every poll failed with
+  `SessionTimeout` / HTTP 404. The login now matches the modem's own web form.
+
+### Security (companion dashboard `server.ts`)
+- Fixed path traversal in the brand-image proxy (arbitrary LAN file read).
+- `ZTE_MODEM_PASSWORD` is only used for the configured host (closes a password-hash
+  oracle); removed open CORS; the server now binds to `127.0.0.1` by default
+  (`HOST` env to override); every upstream request uses `redirect: 'manual'` and an
+  8-second timeout (SSRF / hang hardening).
+
+### Added
+- Re-authentication flow: wrong or changed credentials trigger a Home Assistant
+  reauth prompt instead of silent retries.
+- Diagnostics now include the full normalized data, raw XML values and the last
+  exception (username/host/password redacted).
+- `data_description` help text for the setup fields (en/de/fr/es).
+
+### Changed / internal
+- New `ZteH186Entity` base class; `PARALLEL_UPDATES`; power uses the dBm unit
+  constant; `configuration_url` derives from the API client (IPv6-safe).
+- Tooling: Ruff (lint + format), mypy and pytest config; `requires-python` 3.13.
+- CI overhauled: Python 3.13, Ruff jobs, a Node job (tsc / Vitest / Vite build),
+  `permissions` and `concurrency`.
+- Host validation extracted to `src/server/validateHost.ts` with 29 Vitest SSRF
+  cases (replacing a dev-server-only test that silently skipped in CI).
+- Removed the dead `register_static_path` brand hack (Core serves `brand/` since 2026.3).
+
 ## [1.2.1] - 2026-11-13
 
 ### Changed

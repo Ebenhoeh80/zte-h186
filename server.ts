@@ -426,7 +426,7 @@ app.get('/api/hacs/files', (_req: Request, res: Response) => {
     { path: 'custom_components/zte_h186/api.py', description: 'Asynchronous aiohttp client with 5-step ZTE handshake' },
     { path: 'custom_components/zte_h186/coordinator.py', description: 'DataUpdateCoordinator with options-aware polling' },
     { path: 'custom_components/zte_h186/config_flow.py', description: 'UI Config Flow, Reconfigure Flow, and Options Flow' },
-    { path: 'custom_components/zte_h186/sensor.py', description: '26 Sensor entities with modern SensorEntityDescription' },
+    { path: 'custom_components/zte_h186/sensor.py', description: '27 sensor entities with modern SensorEntityDescription' },
     { path: 'custom_components/zte_h186/binary_sensor.py', description: 'Binary sensors for DSL link connectivity and noise warning' },
     { path: 'custom_components/zte_h186/button.py', description: 'Action button for immediate manual refresh' },
     { path: 'custom_components/zte_h186/diagnostics.py', description: 'Diagnostics export with credentials redaction' },
@@ -473,9 +473,9 @@ app.get('/api/brands/integration/zte_h186/:file', (req: Request, res: Response) 
 
 // API: Download Release ZIP
 app.get('/api/download/release-zip', (_req: Request, res: Response) => {
-  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.2.1.zip');
+  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.3.0.zip');
   if (fs.existsSync(zipPath)) {
-    res.download(zipPath, 'zte-h186-v1.2.1.zip');
+    res.download(zipPath, 'zte-h186-v1.3.0.zip');
   } else {
     res.status(404).send('ZIP archive not found');
   }

@@ -234,12 +234,12 @@ export default function App() {
             {/* Download Release ZIP */}
             <a
               href="/api/download/release-zip"
-              download="zte-h186-v1.2.1.zip"
+              download="zte-h186-v1.3.0.zip"
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
-              title="Release-Paket (v1.0.0.zip) herunterladen"
+              title="Release-Paket (v1.3.0.zip) herunterladen"
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Release ZIP (v1.0.0)</span>
+              <span className="hidden md:inline">Release ZIP (v1.3.0)</span>
             </a>
 
             {/* Refresh Button */}
@@ -258,7 +258,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto text-sm border-t border-slate-800/60">
           {[
             { id: 'dashboard', label: 'DSL Dashboard', icon: Gauge },
-            { id: 'entities', label: 'HA Entitäten (26 Sensoren)', icon: Layers },
+            { id: 'entities', label: 'HA Entitäten (27 Sensoren)', icon: Layers },
             { id: 'hacs', label: 'HACS Repository Code', icon: FileCode },
             { id: 'config_flow', label: 'Config Flow UI', icon: Sliders },
             { id: 'protocol', label: 'Protokoll Inspector', icon: Terminal },
@@ -588,12 +588,12 @@ export default function App() {
           </div>
         )}
 
-        {/* ----------------- TAB: ENTITIES (26 SENSORS) ----------------- */}
+        {/* ----------------- TAB: ENTITIES (27 SENSORS) ----------------- */}
         {activeTab === 'entities' && dsl && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
-                <h2 className="text-xl font-bold text-white">Home Assistant Entitätenkatalog (26 Sensoren)</h2>
+                <h2 className="text-xl font-bold text-white">Home Assistant Entitätenkatalog (27 Sensoren)</h2>
                 <p className="text-xs text-slate-400">
                   Alle automatisch über den DataUpdateCoordinator und SensorEntityDescription bereitgestellten Entitäten.
                 </p>
@@ -603,7 +603,7 @@ export default function App() {
                   Device: ZTE H186 ({host})
                 </span>
                 <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  26 Sensoren + 2 Binär + 1 Button
+                  27 Sensoren + 2 Binär + 1 Button
                 </span>
               </div>
             </div>

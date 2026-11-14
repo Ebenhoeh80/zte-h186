@@ -54,7 +54,7 @@ Eine native, asynchrone Home Assistant Custom Integration für das **ZTE H186 DS
 
 ### Methode 2: Manuelle Installation
 
-1. Das Release-Archiv `zte-h186-v1.2.1.zip` herunterladen.
+1. Das Release-Archiv `zte-h186-v1.3.0.zip` herunterladen.
 2. Den Ordner `custom_components/zte_h186` in dein Home-Assistant-Verzeichnis kopieren:
    ```text
    /config/custom_components/zte_h186
