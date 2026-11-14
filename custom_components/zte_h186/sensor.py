@@ -85,7 +85,7 @@ SENSOR_DESCRIPTIONS: tuple[ZteH186SensorEntityDescription, ...] = (
         icon="mdi:gauge",
         value_fn=lambda data: (
             round((data.downstream_sync / data.downstream_max) * 100, 1)
-            if data.downstream_max and data.downstream_max > 0
+            if data.downstream_sync is not None and data.downstream_max
             else None
         ),
     ),

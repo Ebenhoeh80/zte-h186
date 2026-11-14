@@ -18,6 +18,14 @@
           "username": "Username",
           "password": "Password"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate ZTE H186 Modem",
+        "description": "The modem at {host} rejected the stored credentials. Enter the current username and password.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
     },
     "abort": {
       "already_configured": "This ZTE H186 modem is already configured.",
-      "reconfigure_successful": "Reconfiguration was successful."
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "reauth_successful": "Re-authentication was successful."
     }
   },
   "options": {

@@ -18,6 +18,14 @@
           "username": "Benutzername",
           "password": "Passwort"
         }
+      },
+      "reauth_confirm": {
+        "title": "ZTE H186 Modem neu authentifizieren",
+        "description": "Das Modem unter {host} hat die gespeicherten Zugangsdaten abgelehnt. Gib den aktuellen Benutzernamen und das Passwort ein.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
     },
     "abort": {
       "already_configured": "Dieses ZTE H186 Modem ist bereits konfiguriert.",
-      "reconfigure_successful": "Die Neukonfiguration war erfolgreich."
+      "reconfigure_successful": "Die Neukonfiguration war erfolgreich.",
+      "reauth_successful": "Die erneute Authentifizierung war erfolgreich."
     }
   },
   "options": {

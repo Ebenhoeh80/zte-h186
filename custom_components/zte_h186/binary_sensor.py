@@ -36,7 +36,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZteH186BinarySensorEntityDescription, ...] = (
         is_on_fn=lambda data: bool(
             data.dsl_status
             and data.dsl_status.lower() in ("up", "connected", "showtime")
-            and data.downstream_sync > 0
+            and (data.downstream_sync or 0) > 0
         ),
     ),
     ZteH186BinarySensorEntityDescription(
@@ -44,7 +44,11 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZteH186BinarySensorEntityDescription, ...] = (
         translation_key="line_noise_warning",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
-        is_on_fn=lambda data: bool(data.downstream_snr < 6.0 or data.upstream_snr < 6.0),
+        is_on_fn=lambda data: (
+            None
+            if data.downstream_snr is None or data.upstream_snr is None
+            else data.downstream_snr < 6.0 or data.upstream_snr < 6.0
+        ),
     ),
 )
 

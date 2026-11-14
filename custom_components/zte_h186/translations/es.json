@@ -18,6 +18,14 @@
           "username": "Nombre de usuario",
           "password": "Contraseña"
         }
+      },
+      "reauth_confirm": {
+        "title": "Volver a autenticar el módem ZTE H186",
+        "description": "El módem en {host} rechazó las credenciales guardadas. Introduzca el usuario y la contraseña actuales.",
+        "data": {
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
     },
     "abort": {
       "already_configured": "Este módem ZTE H186 ya está configurado.",
-      "reconfigure_successful": "La reconfiguración se completó con éxito."
+      "reconfigure_successful": "La reconfiguración se completó con éxito.",
+      "reauth_successful": "La reautenticación se completó con éxito."
     }
   },
   "options": {

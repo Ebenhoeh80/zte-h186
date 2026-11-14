@@ -373,10 +373,11 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
         stats = await client.async_get_dsl_stats()
 
         self.assertEqual(stats.dsl_status, "Down")
-        self.assertEqual(stats.downstream_sync, 0.0)
-        self.assertEqual(stats.upstream_sync, 0.0)
-        self.assertEqual(stats.profile, "None")
-        self.assertEqual(stats.modulation, "None")
+        # Missing metrics are reported as unknown (None), not a misleading 0.0.
+        self.assertIsNone(stats.downstream_sync)
+        self.assertIsNone(stats.upstream_sync)
+        self.assertIsNone(stats.profile)
+        self.assertIsNone(stats.modulation)
 
     async def test_concurrent_requests_serialized_by_lock(self):
         """Concurrent requests are serialized by the lock without race conditions."""

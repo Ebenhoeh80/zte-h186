@@ -18,6 +18,14 @@
           "username": "Nom d'utilisateur",
           "password": "Mot de passe"
         }
+      },
+      "reauth_confirm": {
+        "title": "Ré-authentifier le modem ZTE H186",
+        "description": "Le modem à {host} a rejeté les identifiants enregistrés. Saisissez le nom d'utilisateur et le mot de passe actuels.",
+        "data": {
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe"
+        }
       }
     },
     "error": {
@@ -27,7 +35,8 @@
     },
     "abort": {
       "already_configured": "Ce modem ZTE H186 est déjà configuré.",
-      "reconfigure_successful": "La reconfiguration a été effectuée avec succès."
+      "reconfigure_successful": "La reconfiguration a été effectuée avec succès.",
+      "reauth_successful": "La ré-authentification a réussi."
     }
   },
   "options": {

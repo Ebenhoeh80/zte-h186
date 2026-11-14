@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -53,9 +55,13 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
     async def _async_update_data(self) -> ZteH186Data:
         """Fetch data from ZTE H186."""
         try:
-            return await self.client.async_get_dsl_stats()
+            async with asyncio.timeout(30):
+                return await self.client.async_get_dsl_stats()
         except ZteH186AuthError as err:
-            raise UpdateFailed(f"Authentication error with ZTE modem: {err}") from err
+            # Triggers Home Assistant's reauth flow instead of retrying forever.
+            raise ConfigEntryAuthFailed(f"Authentication failed for ZTE modem: {err}") from err
+        except TimeoutError as err:
+            raise UpdateFailed("Timed out fetching data from the ZTE modem") from err
         except ZteH186ConnectionError as err:
             raise UpdateFailed(f"Connection error to ZTE modem: {err}") from err
         except ZteH186Error as err:

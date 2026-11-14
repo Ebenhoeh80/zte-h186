@@ -40,17 +40,18 @@ class ZteH186ProtocolError(ZteH186Error):
 class ZteH186Data:
     """Dataclass holding all normalized ZTE H186 DSL statistics."""
 
-    # 10 Required fields
-    downstream_sync: float  # Mbit/s
-    upstream_sync: float  # Mbit/s
-    downstream_max: float  # Mbit/s
-    upstream_max: float  # Mbit/s
-    downstream_snr: float  # dB
-    upstream_snr: float  # dB
-    downstream_attenuation: float  # dB
-    upstream_attenuation: float  # dB
-    profile: str  # e.g., "17a", "35b"
-    modulation: str  # e.g., "VDSL2"
+    # Core line metrics. None when the field is absent, e.g. while the line is
+    # not in Showtime (link down / training) and the modem omits it.
+    downstream_sync: float | None  # Mbit/s
+    upstream_sync: float | None  # Mbit/s
+    downstream_max: float | None  # Mbit/s
+    upstream_max: float | None  # Mbit/s
+    downstream_snr: float | None  # dB
+    upstream_snr: float | None  # dB
+    downstream_attenuation: float | None  # dB
+    upstream_attenuation: float | None  # dB
+    profile: str | None  # e.g., "17a", "35b"
+    modulation: str | None  # e.g., "VDSL2"
 
     # Optional fields
     dsl_status: str | None = None  # e.g., "Up"
@@ -285,14 +286,23 @@ class ZteH186ApiClient:
         try:
             async with session.get(status_url, headers=status_headers) as resp:
                 status_page_html = await resp.text(encoding="latin-1", errors="replace")
-                if resp.status != 200 or "internet_dsl_interface_lua.lua" not in status_page_html:
-                    raise ZteH186ProtocolError(
-                        "Status page did not contain expected DSL interface reference."
-                    )
+                authorized = (
+                    resp.status == 200 and "internet_dsl_interface_lua.lua" in status_page_html
+                )
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(
                 f"Failed to load intermediate DSL status page: {err}"
             ) from err
+
+        # The modem returns a SID even for rejected credentials, but then every
+        # protected page falls back to SessionTimeout. A primed status page without
+        # the DSL reference means the session is not authorized -> treat as an auth
+        # failure so Home Assistant starts a reauth flow instead of retrying forever.
+        if not authorized:
+            raise ZteH186AuthError(
+                "The modem did not authorize the session after login. "
+                "Check the username and password."
+            )
 
         self._is_authenticated = True
         _LOGGER.debug(
@@ -378,19 +388,10 @@ class ZteH186ApiClient:
             if missing:
                 _LOGGER.debug(
                     "DSL line not in Showtime (Status=%s). "
-                    "Using zeroed rates for missing fields: %s",
+                    "Reporting 'unknown' for missing fields: %s",
                     dsl_status,
                     missing,
                 )
-
-        def _to_float(key: str, divisor: float = 1.0) -> float:
-            val = values.get(key)
-            if not val:
-                return 0.0
-            try:
-                return float(val) / divisor
-            except ValueError:
-                return 0.0
 
         def _to_opt_float(key: str, divisor: float = 1.0) -> float | None:
             val = values.get(key)
@@ -411,16 +412,16 @@ class ZteH186ApiClient:
                 return None
 
         return ZteH186Data(
-            downstream_sync=_to_float("Downstream_current_rate", 1000.0),
-            upstream_sync=_to_float("Upstream_current_rate", 1000.0),
-            downstream_max=_to_float("Downstream_max_rate", 1000.0),
-            upstream_max=_to_float("Upstream_max_rate", 1000.0),
-            downstream_snr=_to_float("Downstream_noise_margin", 10.0),
-            upstream_snr=_to_float("Upstream_noise_margin", 10.0),
-            downstream_attenuation=_to_float("Downstream_attenuation", 10.0),
-            upstream_attenuation=_to_float("Upstream_attenuation", 10.0),
-            profile=values.get("CurrentProfile", "None" if not is_up else "Unknown"),
-            modulation=values.get("Module_type", "None" if not is_up else "Unknown"),
+            downstream_sync=_to_opt_float("Downstream_current_rate", 1000.0),
+            upstream_sync=_to_opt_float("Upstream_current_rate", 1000.0),
+            downstream_max=_to_opt_float("Downstream_max_rate", 1000.0),
+            upstream_max=_to_opt_float("Upstream_max_rate", 1000.0),
+            downstream_snr=_to_opt_float("Downstream_noise_margin", 10.0),
+            upstream_snr=_to_opt_float("Upstream_noise_margin", 10.0),
+            downstream_attenuation=_to_opt_float("Downstream_attenuation", 10.0),
+            upstream_attenuation=_to_opt_float("Upstream_attenuation", 10.0),
+            profile=values.get("CurrentProfile"),
+            modulation=values.get("Module_type"),
             dsl_status=values.get("Status", "Down"),
             downstream_power=_to_opt_float("Downstream_power", 10.0),
             upstream_power=_to_opt_float("Upstream_power", 10.0),
