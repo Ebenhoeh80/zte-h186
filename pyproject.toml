@@ -44,3 +44,6 @@ no_implicit_optional = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Put the repo root on sys.path so tests can import the top-level CLI module
+# (zte_h186_stats) regardless of how pytest is invoked (console script vs -m).
+pythonpath = ["."]
