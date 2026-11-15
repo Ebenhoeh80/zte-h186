@@ -217,3 +217,7 @@ To contribute additional translations, please see [CONTRIBUTING.md](CONTRIBUTING
 
 This project is licensed under the MIT License – see [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
+
+## Donations
+
+Voluntary donations: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr

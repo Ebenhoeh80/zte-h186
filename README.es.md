@@ -65,3 +65,7 @@ Una integración personalizada asíncrona para el **módem DSL ZTE H186**. Lee t
 
 Este proyecto está bajo la Licencia MIT – consulte [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
+
+## Donaciones
+
+Donaciones voluntarias: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr

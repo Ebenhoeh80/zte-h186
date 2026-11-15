@@ -65,3 +65,7 @@ Une intégration personnalisée asynchrone pour le **modem DSL ZTE H186**. Lit l
 
 Ce projet est sous licence MIT – voir [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
+
+## Dons
+
+Dons volontaires : https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
