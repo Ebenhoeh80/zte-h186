@@ -98,3 +98,7 @@ Die Übersetzungen gelten automatisch für:
 
 Dieses Projekt ist unter der MIT-Lizenz lizenziert – siehe [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
+
+## Spenden
+
+Freiwillige Spenden: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
