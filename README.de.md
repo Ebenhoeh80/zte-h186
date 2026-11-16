@@ -9,6 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Quality Scale: Gold](https://img.shields.io/badge/Quality%20Scale-Gold-ffd700.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internationalisierung-i18n)
+[![Spenden via PayPal](https://img.shields.io/badge/❤%20Spenden-PayPal-00457C.svg?logo=paypal&logoColor=white)](https://www.paypal.com/pool/9p84qTHCFr?sr=wccr)
 
 [English](README.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md)
 
@@ -99,6 +100,19 @@ Die Übersetzungen gelten automatisch für:
 Dieses Projekt ist unter der MIT-Lizenz lizenziert – siehe [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
 
-## Spenden
+---
 
-Freiwillige Spenden: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
+## ❤️ Projekt unterstützen
+
+<div align="center">
+
+**Ich entwickle und pflege diese Integration in meiner Freizeit – und trage die laufenden Kosten aus eigener Tasche.**
+
+Wenn sie dir Zeit oder Ärger erspart, hält eine kleine freiwillige Spende das Projekt am Leben und motiviert zu neuen Funktionen.
+Jeder Beitrag, egal wie klein, freut mich riesig. Vielen Dank! 🙏
+
+<a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
+  <img src="https://img.shields.io/badge/Spendier%20mir%20einen%20Kaffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Spenden via PayPal" height="42">
+</a>
+
+</div>
