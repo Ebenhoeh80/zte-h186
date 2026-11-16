@@ -9,6 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Quality Scale: Gold](https://img.shields.io/badge/Quality%20Scale-Gold-ffd700.svg)](https://developers.home-assistant.io/docs/core/integration-quality-scale/)
 [![Languages: en, de, fr, es](https://img.shields.io/badge/Languages-en%20%7C%20de%20%7C%20fr%20%7C%20es-brightgreen.svg)](#internacionalización-i18n)
+[![Donar vía PayPal](https://img.shields.io/badge/❤%20Donar-PayPal-00457C.svg?logo=paypal&logoColor=white)](https://www.paypal.com/pool/9p84qTHCFr?sr=wccr)
 
 [English](README.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md)
 
@@ -66,6 +67,19 @@ Una integración personalizada asíncrona para el **módem DSL ZTE H186**. Lee t
 Este proyecto está bajo la Licencia MIT – consulte [LICENSE](LICENSE).  
 Copyright (C) 2026 Daniel Ebenhöh.
 
-## Donaciones
+---
 
-Donaciones voluntarias: https://www.paypal.com/pool/9p84qTHCFr?sr=wccr
+## ❤️ Apoya el proyecto
+
+<div align="center">
+
+**Desarrollo y mantengo esta integración en mi tiempo libre, y asumo yo mismo los gastos.**
+
+Si te ahorra tiempo o complicaciones, una pequeña donación voluntaria mantiene vivo el proyecto y motiva nuevas funciones.
+Cada aportación, por pequeña que sea, se agradece enormemente. ¡Gracias! 🙏
+
+<a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
+  <img src="https://img.shields.io/badge/Inv%C3%ADtame%20a%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donar vía PayPal" height="42">
+</a>
+
+</div>
