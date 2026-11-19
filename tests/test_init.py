@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.zte_h186.api import ZteH186AuthError, ZteH186ConnectionError
@@ -79,3 +79,24 @@ async def test_unique_id_migration(
     migrated = ent_reg.async_get(legacy.entity_id)
     assert migrated is not None
     assert migrated.unique_id == f"{mock_config_entry.entry_id}_downstream_sync"
+
+
+async def test_device_identifier_migration(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
+) -> None:
+    """A legacy host-based device is rebound to the config entry, not duplicated."""
+    mock_config_entry.add_to_hass(hass)
+    dev_reg = dr.async_get(hass)
+    legacy = dev_reg.async_get_or_create(
+        config_entry_id=mock_config_entry.entry_id,
+        identifiers={(DOMAIN, "192.168.10.2")},
+        name="ZTE H186",
+    )
+
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    devices = dr.async_entries_for_config_entry(dev_reg, mock_config_entry.entry_id)
+    assert len(devices) == 1
+    assert devices[0].id == legacy.id
+    assert devices[0].identifiers == {(DOMAIN, mock_config_entry.entry_id)}

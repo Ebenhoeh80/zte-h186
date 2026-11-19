@@ -5,6 +5,16 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **No more deprecation warning on Home Assistant 2026.11.** The one-time
+  migration of the legacy host-based device looked the device up with
+  `device_registry.async_get_device`, which is deprecated (identifiers are no
+  longer unique across config entries) and stops working in Home Assistant
+  2027.8. It now looks the device up in this config entry only, and falls back to
+  the old call on older Home Assistant versions. A test covers the migration.
+
 ## [1.4.0] - 2026-11-14
 
 This release takes the integration to the Home Assistant **Gold** quality scale.

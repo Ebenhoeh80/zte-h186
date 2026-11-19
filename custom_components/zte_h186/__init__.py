@@ -44,6 +44,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> b
     return True
 
 
+def _async_get_entry_device(
+    dev_reg: dr.DeviceRegistry, entry: ZteH186ConfigEntry, identifier: tuple[str, str]
+) -> dr.DeviceEntry | None:
+    """Return the device of this config entry that has the identifier, if any.
+
+    Recent Home Assistant versions look devices up per config entry and deprecate
+    the entry-agnostic ``async_get_device`` (identifiers are no longer unique across
+    config entries). Older versions only have the latter, so fall back to it there.
+    """
+    lookup = getattr(dev_reg, "async_get_device_by_identifier", None)
+    if lookup is not None:
+        return lookup(identifier, entry.entry_id)
+    return dev_reg.async_get_device(identifiers={identifier})
+
+
 async def _async_migrate_host_to_entry_id(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> None:
     """Migrate legacy host-based unique IDs and device identifiers to entry_id.
 
@@ -64,7 +79,7 @@ async def _async_migrate_host_to_entry_id(hass: HomeAssistant, entry: ZteH186Con
     await er.async_migrate_entries(hass, entry.entry_id, _migrate_entity)
 
     dev_reg = dr.async_get(hass)
-    legacy_device = dev_reg.async_get_device(identifiers={(DOMAIN, entry.data[CONF_HOST].lower())})
+    legacy_device = _async_get_entry_device(dev_reg, entry, (DOMAIN, entry.data[CONF_HOST].lower()))
     if legacy_device is not None and (DOMAIN, entry.entry_id) not in legacy_device.identifiers:
         dev_reg.async_update_device(
             legacy_device.id,
