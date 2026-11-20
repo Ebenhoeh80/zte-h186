@@ -139,6 +139,15 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                 # at.
                 await self.async_set_unique_id(info.serial_number, raise_on_progress=False)
                 self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+                if any(
+                    not known.data.get(CONF_SERIAL) and known.state is not ConfigEntryState.LOADED
+                    for known in self._async_current_entries(include_ignore=False)
+                ):
+                    # An entry of an older version that cannot reach its modem (it may have a new
+                    # address) has not read the serial number yet: adding the modem here would
+                    # make a second entry for it. Reconfigure that entry instead; it adopts the
+                    # serial number.
+                    return self.async_abort(reason="already_configured")
                 return self.async_create_entry(
                     title=modem_title(info.serial_number),
                     data={

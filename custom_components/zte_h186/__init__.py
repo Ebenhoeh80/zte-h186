@@ -170,11 +170,15 @@ def _async_migrate_registries(hass: HomeAssistant, entry: ZteH186ConfigEntry, se
             if not entity_entry.unique_id.startswith(old_prefix):
                 continue
             new_unique_id = f"{new_prefix}{entity_entry.unique_id[len(old_prefix) :]}"
-            clash = ent_reg.async_get_entity_id(entity_entry.domain, DOMAIN, new_unique_id)
-            if clash is not None:
-                # An older version that ran after a downgrade created it next to the original; the
-                # original carries the history and the customisations.
-                ent_reg.async_remove(clash)
+            clash_id = ent_reg.async_get_entity_id(entity_entry.domain, DOMAIN, new_unique_id)
+            if clash_id is not None:
+                # A version that ran after a downgrade created a second copy next to the original.
+                # The older one is the original: it carries the history and the customisations.
+                clash = ent_reg.async_get(clash_id)
+                if clash is not None and clash.created_at <= entity_entry.created_at:
+                    ent_reg.async_remove(entity_entry.entity_id)
+                    break
+                ent_reg.async_remove(clash_id)
             ent_reg.async_update_entity(entity_entry.entity_id, new_unique_id=new_unique_id)
             break
 
@@ -188,7 +192,13 @@ def _async_migrate_registries(hass: HomeAssistant, entry: ZteH186ConfigEntry, se
             dev_reg.async_update_device(device.id, new_identifiers={(DOMAIN, serial)})
             current = device
         else:
-            dev_reg.async_remove_device(device.id)  # a duplicate that an older version created
+            # A duplicate that an older version created: its entities move to the device first (a
+            # removed device takes its entities with it).
+            for entity_entry in er.async_entries_for_device(
+                ent_reg, device.id, include_disabled_entities=True
+            ):
+                ent_reg.async_update_entity(entity_entry.entity_id, device_id=current.id)
+            dev_reg.async_remove_device(device.id)
 
 
 def _async_get_entry_device(

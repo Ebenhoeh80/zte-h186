@@ -564,3 +564,29 @@ async def test_stopping_home_assistant_logs_off_from_the_modem(
     hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
     await hass.async_block_till_done()
     mock_client.async_logout.assert_awaited()
+
+
+async def test_the_older_of_two_copies_is_kept_after_a_downgrade(
+    hass: HomeAssistant, mock_client
+) -> None:
+    """The entity of the serial number is the original; the copy of the older version goes."""
+    entry = _modern()
+    await _setup(hass, entry)
+    ent_reg = er.async_get(hass)
+    original = next(iter(er.async_entries_for_config_entry(ent_reg, entry.entry_id)))
+    suffix = original.unique_id[len(f"{SERIAL}_") :]
+    await hass.config_entries.async_unload(entry.entry_id)
+    ent_reg.async_get_or_create(
+        original.domain,
+        DOMAIN,
+        f"{entry.entry_id}_{suffix}",
+        config_entry=entry,
+        suggested_object_id="copy",
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert ent_reg.async_get(original.entity_id) is not None
+    assert ent_reg.async_get(original.entity_id).unique_id == original.unique_id
+    assert (
+        ent_reg.async_get_entity_id(original.domain, DOMAIN, f"{entry.entry_id}_{suffix}") is None
+    )
