@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Verbindung zum Modem fehlgeschlagen. Bitte IP-Adresse und Erreichbarkeit prüfen.",
+      "invalid_host": "Bitte eine IP-Adresse oder einen Hostnamen eingeben, optional mit Port oder vorangestelltem http:// bzw. https:// (kein Pfad).",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
       "unknown": "Unerwarteter Fehler bei der Kommunikation aufgetreten."
     },
@@ -109,6 +110,9 @@
   "exceptions": {
     "auth_failed": {
       "message": "Das ZTE H186 Modem unter {host} hat die gespeicherten Zugangsdaten abgelehnt. Bitte erneut authentifizieren."
+    },
+    "auth_retry": {
+      "message": "Das ZTE H186 Modem unter {host} hat die Anmeldung abgelehnt. Möglicherweise ist die einzige Admin-Sitzung belegt (zum Beispiel durch die Weboberfläche). Die Anmeldung wird wiederholt; die Zugangsdaten werden nur erneut abgefragt, wenn sie weiter scheitert."
     },
     "cannot_connect": {
       "message": "Verbindung zum ZTE H186 Modem unter {host} nicht möglich. Bitte Erreichbarkeit prüfen."

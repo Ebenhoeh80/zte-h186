@@ -9,9 +9,12 @@ import ipaddress
 import logging
 import re
 import time
+from typing import Any, Final, Literal
+from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 
 import aiohttp
+from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,6 +26,67 @@ DSL_XML_PATH = "/common_page/internet_dsl_interface_lua.lua"
 STATUS_PAGE_PATH = "/getpage.lua?pid=1002&nextpage=ManagDiag_StatusManag_t.lp"
 DEVICE_INFO_PATH = "/common_page/ManagReg_lua.lua"
 _SERIAL_PATTERN = re.compile(r"^[A-Za-z0-9]{6,32}$")
+
+# The most the integration reads of one answer. The modem is a small embedded device on the LAN; an
+# answer that is larger is not the modem's web interface (or is broken) and is refused instead of
+# being held in memory.
+MAX_PAGE_BYTES = 512 * 1024  # login page, status page
+MAX_TOKEN_BYTES = 4 * 1024  # the numeric login token
+MAX_XML_BYTES = 256 * 1024  # the XML answers (DSL values, device information)
+_CHUNK_BYTES = 16 * 1024
+
+_HOSTNAME = re.compile(
+    r"^(?=.{1,253}$)[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?"
+    r"(\.[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?)*$"
+)
+
+
+def validate_host(value: str) -> str:
+    """Return the address as entered if it is a usable modem address, else raise ``ValueError``.
+
+    Accepted: an IPv4 or IPv6 address, a host name, each with an optional port (``host:80``,
+    ``[::1]:80``), and the same with a leading ``http://`` or ``https://`` (and a trailing ``/``).
+    Everything else (other schemes, a path, a query, credentials in the address, spaces) is refused.
+    """
+    text = value.strip()
+    if not text:
+        raise ValueError("empty address")
+    try:
+        ipaddress.ip_address(text)  # a bare IPv6 address has colons but no port
+    except ValueError:
+        pass
+    else:
+        return text
+    if "://" in text and not text.lower().startswith(("http://", "https://")):
+        raise ValueError("only http:// and https:// are allowed")
+    parts = urlsplit(text if "://" in text else f"//{text}")
+    if parts.path not in ("", "/") or parts.query or parts.fragment or "@" in parts.netloc:
+        raise ValueError("the address must not contain a path, query or credentials")
+    host = parts.hostname  # raises ValueError for a malformed [v6] address
+    _ = parts.port  # raises ValueError for a port that is not a number in 0-65535
+    if not host:
+        raise ValueError("no host in the address")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        if not _HOSTNAME.match(host):
+            raise ValueError("not a valid host name") from None
+    return text.rstrip("/")
+
+
+async def _read_text(resp: aiohttp.ClientResponse, limit: int) -> str:
+    """Read the body of a response (at most ``limit`` bytes) and decode it as Latin-1.
+
+    Raises ``ZteH186ProtocolError`` if the body is larger.
+    """
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in resp.content.iter_chunked(_CHUNK_BYTES):
+        size += len(chunk)
+        if size > limit:
+            raise ZteH186ProtocolError(f"The modem's answer is larger than {limit} bytes.")
+        chunks.append(chunk)
+    return b"".join(chunks).decode("latin-1", errors="replace")
 
 
 def _decode_references(text: str) -> str:
@@ -117,6 +181,80 @@ class ZteH186Data:
     raw_values: dict[str, str] | None = None
 
 
+@dataclass(slots=True, frozen=True)
+class _DslField:
+    """How one value of the modem's DSL answer becomes one attribute of ``ZteH186Data``."""
+
+    attr: str  # attribute of ZteH186Data
+    key: str  # name of the value in the modem's answer
+    kind: Literal["float", "int", "str"]
+    divisor: float = 1.0  # the modem reports kbit/s and tenths of dB
+    required: bool = False  # expected whenever the line is Up
+
+
+# One table for every value: the divisors and the names of the modem's keys live only here.
+DSL_FIELDS: Final[tuple[_DslField, ...]] = (
+    _DslField("downstream_sync", "Downstream_current_rate", "float", 1000.0, True),
+    _DslField("upstream_sync", "Upstream_current_rate", "float", 1000.0, True),
+    _DslField("downstream_max", "Downstream_max_rate", "float", 1000.0, True),
+    _DslField("upstream_max", "Upstream_max_rate", "float", 1000.0, True),
+    _DslField("downstream_snr", "Downstream_noise_margin", "float", 10.0, True),
+    _DslField("upstream_snr", "Upstream_noise_margin", "float", 10.0, True),
+    _DslField("downstream_attenuation", "Downstream_attenuation", "float", 10.0, True),
+    _DslField("upstream_attenuation", "Upstream_attenuation", "float", 10.0, True),
+    _DslField("profile", "CurrentProfile", "str", required=True),
+    _DslField("modulation", "Module_type", "str", required=True),
+    _DslField("downstream_power", "Downstream_power", "float", 10.0),
+    _DslField("upstream_power", "Upstream_power", "float", 10.0),
+    _DslField("data_path", "Data_path", "str"),
+    _DslField("downstream_interleave_depth", "DownInterleavedepth", "int"),
+    _DslField("upstream_interleave_depth", "UpInterleaveDepth", "int"),
+    _DslField("downstream_interleave_delay", "DownInterleaveDelay", "int"),
+    _DslField("upstream_interleave_delay", "UpInterleaveDelay", "int"),
+    _DslField("downstream_inp", "DownstreamInp", "float", 10.0),
+    _DslField("upstream_inp", "UpstreamInp", "float", 10.0),
+    _DslField("showtime", "Showtime_start", "int"),
+    _DslField("link_encapsulation", "tLinkEncapsulationUsed", "str"),
+    _DslField("downstream_crc", "DownCrc_errors", "int"),
+    _DslField("upstream_crc", "UpCrc_errors", "int"),
+    _DslField("downstream_fec", "Fec_errors", "int"),
+    _DslField("upstream_fec", "Atuc_fec_errors", "int"),
+)
+_STATUS_KEY: Final = "Status"
+
+
+def _convert(field: _DslField, text: str | None) -> float | int | str | None:
+    """Convert one value of the answer; ``None`` if it is absent or not a number."""
+    if not text:
+        return None
+    if field.kind == "str":
+        return text
+    try:
+        if field.kind == "int":
+            return int(text)
+        return float(text) / field.divisor
+    except ValueError:
+        return None
+
+
+def parse_dsl_values(values: dict[str, str]) -> tuple[ZteH186Data, list[str]]:
+    """Turn the modem's name-value pairs into ``ZteH186Data``.
+
+    A value the modem leaves out is ``None`` (unknown), never a made-up number. Returns the data and
+    the required values that are missing although the line is Up (empty while it trains or is
+    Down, when the modem leaves them out by design). Raises ``ZteH186ProtocolError`` only for an
+    answer that holds none of the known values at all.
+    """
+    if _STATUS_KEY not in values and not any(f.key in values for f in DSL_FIELDS):
+        raise ZteH186ProtocolError("The modem's DSL answer contains no DSL values.")
+    status = values.get(_STATUS_KEY, "Down")
+    is_up = status.strip().lower() == "up"
+    missing = [f.key for f in DSL_FIELDS if f.required and f.key not in values] if is_up else []
+    converted: dict[str, Any] = {f.attr: _convert(f, values.get(f.key)) for f in DSL_FIELDS}
+    data = ZteH186Data(**converted, dsl_status=status, raw_values=values)
+    return data, missing
+
+
 class ZteH186ApiClient:
     """API client interacting with ZTE H186 modem via HTTP web endpoints."""
 
@@ -139,6 +277,8 @@ class ZteH186ApiClient:
         self._is_authenticated = False
         self._sid: str | None = None
         self._lock = asyncio.Lock()
+        # The required values that were reported missing last time (logged once, see parse).
+        self._warned_missing: frozenset[str] = frozenset()
 
     @property
     def base_url(self) -> str:
@@ -204,8 +344,8 @@ class ZteH186ApiClient:
                         "Referer": f"{self._base_url}/",
                     },
                 ) as resp:
-                    await resp.read()
-        except (TimeoutError, aiohttp.ClientError) as err:
+                    await _read_text(resp, MAX_PAGE_BYTES)
+        except (TimeoutError, aiohttp.ClientError, ZteH186ProtocolError) as err:
             _LOGGER.debug(
                 "Log-off from the modem failed (%s); the session times out by itself", err
             )
@@ -231,7 +371,7 @@ class ZteH186ApiClient:
         hex_bytes = "".join(re.findall(r"\\x([0-9a-fA-F]{2})", match.group(1)))
         try:
             return bytes.fromhex(hex_bytes).decode("ascii", errors="replace")
-        except Exception as err:
+        except ValueError as err:
             raise ZteH186ProtocolError(f"Failed to decode session token: {err}") from err
 
     @staticmethod
@@ -277,7 +417,7 @@ class ZteH186ApiClient:
             async with session.get(root_url) as resp:
                 if resp.status != 200:
                     raise ZteH186ConnectionError(f"Login page returned HTTP {resp.status}")
-                login_page_text = await resp.text(encoding="latin-1", errors="replace")
+                login_page_text = await _read_text(resp, MAX_PAGE_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(
                 f"Unable to reach modem at {self._base_url}: {err}"
@@ -291,7 +431,7 @@ class ZteH186ApiClient:
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
         try:
             async with session.get(token_url, headers={"Referer": root_url}) as resp:
-                token_resp = await resp.text(encoding="latin-1", errors="replace")
+                token_resp = await _read_text(resp, MAX_TOKEN_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(f"Failed to fetch login token: {err}") from err
 
@@ -341,11 +481,11 @@ class ZteH186ApiClient:
         # Fallback check from session cookie jar
         if not self._sid:
             try:
-                cookies = session.cookie_jar.filter_cookies(self._base_url)
+                cookies = session.cookie_jar.filter_cookies(URL(self._base_url))
                 if "SID" in cookies and cookies["SID"].value:
                     self._sid = cookies["SID"].value
-            except Exception:
-                pass
+            except (AttributeError, KeyError, TypeError, ValueError) as err:
+                _LOGGER.debug("The cookie jar holds no usable SID cookie: %s", err)
 
         if not self._sid:
             raise ZteH186AuthError(
@@ -361,7 +501,7 @@ class ZteH186ApiClient:
         }
         try:
             async with session.get(status_url, headers=status_headers) as resp:
-                status_page_html = await resp.text(encoding="latin-1", errors="replace")
+                status_page_html = await _read_text(resp, MAX_PAGE_BYTES)
                 authorized = (
                     resp.status == 200 and "internet_dsl_interface_lua.lua" in status_page_html
                 )
@@ -434,7 +574,7 @@ class ZteH186ApiClient:
         endpoint = f"{self._base_url}{DEVICE_INFO_PATH}?_={int(time.time() * 1000)}"
         try:
             async with session.get(status_url, headers={"Cookie": cookie}) as page:
-                await page.read()
+                await _read_text(page, MAX_PAGE_BYTES)
             async with session.get(
                 endpoint,
                 headers={
@@ -444,7 +584,7 @@ class ZteH186ApiClient:
                     "Cookie": cookie,
                 },
             ) as resp:
-                text = await resp.text(encoding="latin-1", errors="replace")
+                text = await _read_text(resp, MAX_XML_BYTES)
                 if resp.status != 200 or "SessionTimeout" in text:
                     return None
                 return text
@@ -464,8 +604,8 @@ class ZteH186ApiClient:
                 ) as resp:
                     if resp.status != 200:
                         return None
-                    text = await resp.text(encoding="latin-1", errors="replace")
-        except (TimeoutError, aiohttp.ClientError):
+                    text = await _read_text(resp, MAX_PAGE_BYTES)
+        except (TimeoutError, aiohttp.ClientError, ZteH186ProtocolError):
             return None
         match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
         if not match:
@@ -494,7 +634,7 @@ class ZteH186ApiClient:
 
             try:
                 async with session.get(endpoint, headers=headers) as resp:
-                    response_text = await resp.text(encoding="latin-1", errors="replace")
+                    response_text = await _read_text(resp, MAX_XML_BYTES)
                     if resp.status != 200 or "SessionTimeout" in response_text:
                         _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
                         self._is_authenticated = False
@@ -502,9 +642,7 @@ class ZteH186ApiClient:
                         await self._async_login_internal(session)
                         headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
                         async with session.get(endpoint, headers=headers) as retry_resp:
-                            response_text = await retry_resp.text(
-                                encoding="latin-1", errors="replace"
-                            )
+                            response_text = await _read_text(retry_resp, MAX_XML_BYTES)
                             if retry_resp.status != 200:
                                 raise ZteH186ProtocolError(
                                     f"DSL endpoint returned HTTP {retry_resp.status} "
@@ -520,79 +658,16 @@ class ZteH186ApiClient:
             if error not in ("", "SUCC"):
                 raise ZteH186ProtocolError(f"Modem returned error: {error}")
 
-            required_keys = (
-                "Downstream_current_rate",
-                "Upstream_current_rate",
-                "Downstream_max_rate",
-                "Upstream_max_rate",
-                "Downstream_noise_margin",
-                "Upstream_noise_margin",
-                "Downstream_attenuation",
-                "Upstream_attenuation",
-                "CurrentProfile",
-                "Module_type",
-            )
-            missing = [k for k in required_keys if k not in values]
-            dsl_status = values.get("Status", "Down")
-            is_up = str(dsl_status).strip().lower() == "up"
-
-            if missing and is_up:
-                raise ZteH186ProtocolError(
-                    "Missing required fields in DSL response while link is Up: "
-                    f"{', '.join(missing)}"
+        data, missing = parse_dsl_values(values)
+        if missing:
+            # One warning per set of missing fields (not one per poll); the values are unknown.
+            if frozenset(missing) != self._warned_missing:
+                self._warned_missing = frozenset(missing)
+                _LOGGER.warning(
+                    "The modem reports the line as Up but leaves out: %s. These values are unknown "
+                    "(None) until the modem sends them; this may be a firmware difference",
+                    ", ".join(missing),
                 )
-            if missing:
-                _LOGGER.debug(
-                    "DSL line not in Showtime (Status=%s). "
-                    "Reporting 'unknown' for missing fields: %s",
-                    dsl_status,
-                    missing,
-                )
-
-        def _to_opt_float(key: str, divisor: float = 1.0) -> float | None:
-            val = values.get(key)
-            if not val:
-                return None
-            try:
-                return float(val) / divisor
-            except ValueError:
-                return None
-
-        def _to_opt_int(key: str) -> int | None:
-            val = values.get(key)
-            if not val:
-                return None
-            try:
-                return int(val)
-            except ValueError:
-                return None
-
-        return ZteH186Data(
-            downstream_sync=_to_opt_float("Downstream_current_rate", 1000.0),
-            upstream_sync=_to_opt_float("Upstream_current_rate", 1000.0),
-            downstream_max=_to_opt_float("Downstream_max_rate", 1000.0),
-            upstream_max=_to_opt_float("Upstream_max_rate", 1000.0),
-            downstream_snr=_to_opt_float("Downstream_noise_margin", 10.0),
-            upstream_snr=_to_opt_float("Upstream_noise_margin", 10.0),
-            downstream_attenuation=_to_opt_float("Downstream_attenuation", 10.0),
-            upstream_attenuation=_to_opt_float("Upstream_attenuation", 10.0),
-            profile=values.get("CurrentProfile"),
-            modulation=values.get("Module_type"),
-            dsl_status=values.get("Status", "Down"),
-            downstream_power=_to_opt_float("Downstream_power", 10.0),
-            upstream_power=_to_opt_float("Upstream_power", 10.0),
-            data_path=values.get("Data_path"),
-            downstream_interleave_depth=_to_opt_int("DownInterleavedepth"),
-            upstream_interleave_depth=_to_opt_int("UpInterleaveDepth"),
-            downstream_interleave_delay=_to_opt_int("DownInterleaveDelay"),
-            upstream_interleave_delay=_to_opt_int("UpInterleaveDelay"),
-            downstream_inp=_to_opt_float("DownstreamInp", 10.0),
-            upstream_inp=_to_opt_float("UpstreamInp", 10.0),
-            showtime=_to_opt_int("Showtime_start"),
-            link_encapsulation=values.get("tLinkEncapsulationUsed"),
-            downstream_crc=_to_opt_int("DownCrc_errors"),
-            upstream_crc=_to_opt_int("UpCrc_errors"),
-            downstream_fec=_to_opt_int("Fec_errors"),
-            upstream_fec=_to_opt_int("Atuc_fec_errors"),
-            raw_values=values,
-        )
+        else:
+            self._warned_missing = frozenset()
+        return data

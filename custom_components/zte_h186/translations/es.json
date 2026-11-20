@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Error al conectar con el módem. Verifique la dirección IP y la accesibilidad de red.",
+      "invalid_host": "Introduzca una dirección IP o un nombre de host, opcionalmente con puerto o con http:// o https:// al principio (sin ruta).",
       "invalid_auth": "Nombre de usuario o contraseña no válidos.",
       "unknown": "Ocurrió un error inesperado durante la comunicación."
     },
@@ -109,6 +110,9 @@
   "exceptions": {
     "auth_failed": {
       "message": "El módem ZTE H186 en {host} rechazó las credenciales guardadas. Vuelva a autenticarse."
+    },
+    "auth_retry": {
+      "message": "El módem ZTE H186 en {host} rechazó el inicio de sesión. Puede que su única sesión de administrador esté ocupada (por ejemplo, por la interfaz web). Se vuelve a intentar; las credenciales solo se piden de nuevo si sigue fallando."
     },
     "cannot_connect": {
       "message": "No se pudo conectar con el módem ZTE H186 en {host}. Compruebe que sea accesible."

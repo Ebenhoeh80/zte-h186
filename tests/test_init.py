@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.zte_h186.api import ZteH186AuthError, ZteH186ConnectionError
@@ -103,3 +104,60 @@ async def test_device_identifier_migration(
     assert len(devices) == 1
     assert devices[0].id == legacy.id
     assert devices[0].identifiers == {(DOMAIN, SERIAL)}
+
+
+def _reauth_flows(hass: HomeAssistant) -> list:
+    return [
+        f
+        for f in hass.config_entries.flow.async_progress()
+        if f["context"]["source"] == SOURCE_REAUTH
+    ]
+
+
+async def test_running_auth_errors_start_reauth_only_when_repeated(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client, dsl_data_up
+) -> None:
+    """One refused login while running is retried (busy session); two in a row start reauth."""
+    mock_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = mock_config_entry.runtime_data
+
+    mock_client.async_get_dsl_stats.side_effect = ZteH186AuthError("busy")
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert coordinator.last_update_success is False
+    assert isinstance(coordinator.last_exception, UpdateFailed)
+    assert coordinator.last_exception.translation_key == "auth_retry"
+    assert not _reauth_flows(hass)
+
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert len(_reauth_flows(hass)) == 1
+
+
+async def test_running_auth_error_counter_is_reset_by_success(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client, dsl_data_up
+) -> None:
+    """A good poll (or another kind of failure) between two refused logins resets the count."""
+    mock_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = mock_config_entry.runtime_data
+
+    for outcome in (dsl_data_up, ZteH186ConnectionError("no route")):
+        mock_client.async_get_dsl_stats.side_effect = ZteH186AuthError("busy")
+        await coordinator.async_refresh()
+        mock_client.async_get_dsl_stats.side_effect = None
+        if isinstance(outcome, Exception):
+            mock_client.async_get_dsl_stats.side_effect = outcome
+        else:
+            mock_client.async_get_dsl_stats.return_value = outcome
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+        assert not _reauth_flows(hass)
+
+    mock_client.async_get_dsl_stats.side_effect = ZteH186AuthError("busy")
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert not _reauth_flows(hass)

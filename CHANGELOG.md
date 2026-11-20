@@ -5,6 +5,41 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-11-21
+
+### Added
+- **Security policy** (`SECURITY.md`) with the supported versions, the threat model (the modem speaks plain
+  HTTP, one admin session) and private reporting; a CodeQL workflow for Python and JavaScript/TypeScript.
+- **Address validation** in the setup and reconfigure dialogs: an IP address or host name, optionally with a
+  port or a leading `http://` / `https://`; anything else (other schemes, paths, credentials) is refused
+  before the modem is contacted.
+- **Capture anonymizer** `scripts/anonymize_capture.py` and a description of how to add captures in
+  `docs/PROTOCOL.md`; synthetic test fixtures; tests for the binary sensors and the refresh button.
+- **CI:** a version consistency check (`scripts/check_versions.py`), `mypy` on the integration, Ruff pinned in
+  `requirements_test.txt`.
+
+### Changed
+- **The password field is masked** in the setup, reconfigure and re-authentication dialogs.
+- **Re-authentication is asked for later:** while the integration is running, one refused login is retried at
+  the next poll (usually the modem's single admin session is busy, for example because you are in its web
+  interface); only two refused logins in a row start the re-authentication. At setup it still starts at once.
+- **Tolerant parsing:** if the modem reports the line as Up but leaves out some values, those values are
+  unknown and one warning names them; the other entities keep working. Only an answer without any DSL value
+  is an error. Keys and divisors are now one table in the code.
+- **Answers of the modem are limited in size** (512 KiB for pages, 4 KiB for the login token, 256 KiB for XML).
+- **CI:** the shared release workflow is pinned to a commit; workflows run with read-only permissions.
+
+### Fixed
+- **Diagnostics no longer contain identifying data:** the modem's raw answer is reduced to a list of known
+  DSL values (other keys are only named), the last error contains no address, and the device versions are
+  included. Serial number, hardware address, title and address stay redacted.
+- **The fallback that reads the session id from the cookie jar** never worked (it passed a string where a URL
+  object is needed and the error was swallowed); it does now.
+
+### Removed
+- The outdated `public/zte-h186-v1.3.0.zip`; the dashboard's download button now redirects to the zip of the
+  latest GitHub release.
+
 ## [1.5.1] - 2026-11-20
 
 ### Changed

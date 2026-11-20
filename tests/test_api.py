@@ -18,6 +18,8 @@ from custom_components.zte_h186.api import (
     ZteH186ProtocolError,
 )
 
+from .fake_http import FakeContent
+
 SAMPLE_LOGIN_HTML = """
 <!DOCTYPE html>
 <html>
@@ -233,6 +235,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data="", headers=None, cookies=None):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = headers or {}
                 self.cookies = cookies or {}
 
@@ -288,6 +291,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = MagicMock(getall=MagicMock(return_value=[]))
                 self.cookies = {}
 
@@ -329,6 +333,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = MagicMock(getall=MagicMock(return_value=["SID=test_sid"]))
                 self.cookies = {"SID": MagicMock(value="test_sid")}
 
@@ -370,6 +375,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data="", label=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.label = label
                 self.headers = MagicMock(getall=MagicMock(return_value=["SID=locked_sid"]))
                 self.cookies = {"SID": MagicMock(value="locked_sid")}
@@ -419,6 +425,7 @@ class _Resp:
     def __init__(self, status=200, text_data="", sid=None):
         self.status = status
         self._text = text_data
+        self.content = FakeContent(text_data)
         self.headers = MagicMock(
             getall=MagicMock(return_value=[f"SID={sid}; path=/"] if sid else [])
         )
@@ -472,13 +479,39 @@ class ApiErrorPathTests(unittest.IsolatedAsyncioTestCase):
             await _client(mock_session).async_login()
 
     async def test_missing_required_fields_when_up(self):
-        """Status=Up but missing rate fields raises ZteH186ProtocolError."""
+        """Status=Up but missing rate fields gives unknown values and one warning, no error."""
         xml = (
             "<ajax_response_xml_root>"
             "<IF_ERRORSTR>SUCC</IF_ERRORSTR>"
             "<Instance><ParaName>Status</ParaName><ParaValue>Up</ParaValue></Instance>"
             "</ajax_response_xml_root>"
         )
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, '<html>"internet_dsl_interface_lua.lua"</html>'),
+            _Resp(200, xml),
+        ]
+        mock_session.post.return_value = _Resp(200, "", sid="sid_x")
+        client = _client(mock_session)
+        with self.assertLogs("custom_components.zte_h186.api", "WARNING") as logs:
+            stats = await client.async_get_dsl_stats()
+        self.assertEqual(stats.dsl_status, "Up")
+        self.assertIsNone(stats.downstream_sync)
+        self.assertIsNone(stats.profile)
+        self.assertEqual(len(logs.records), 1)
+        self.assertIn("Downstream_current_rate", logs.output[0])
+        self.assertIn("Module_type", logs.output[0])
+
+        # The same gap at the next poll is not logged again.
+        mock_session.get.side_effect = [_Resp(200, xml)]
+        with self.assertNoLogs("custom_components.zte_h186.api", "WARNING"):
+            await client.async_get_dsl_stats()
+
+    async def test_empty_answer_is_a_protocol_error(self):
+        """An answer without any DSL value is invalid and is an error (not 30 silent unknowns)."""
+        xml = "<ajax_response_xml_root><IF_ERRORSTR>SUCC</IF_ERRORSTR></ajax_response_xml_root>"
         mock_session = MagicMock()
         mock_session.get.side_effect = [
             _Resp(200, SAMPLE_LOGIN_HTML),

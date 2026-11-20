@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect to the modem. Verify the IP address and network reachability.",
+      "invalid_host": "Enter an IP address or host name, optionally with a port or a leading http:// or https:// (no path).",
       "invalid_auth": "Invalid username or password.",
       "unknown": "Unexpected error occurred during communication."
     },
@@ -109,6 +110,9 @@
   "exceptions": {
     "auth_failed": {
       "message": "The ZTE H186 modem at {host} rejected the stored credentials. Please re-authenticate."
+    },
+    "auth_retry": {
+      "message": "The ZTE H186 modem at {host} refused the login. Its single admin session may be in use (for example by the web interface). The login is retried; the credentials are only asked for again if it keeps failing."
     },
     "cannot_connect": {
       "message": "Could not connect to the ZTE H186 modem at {host}. Check that it is reachable."

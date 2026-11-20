@@ -42,10 +42,12 @@ rules:
   integration-owner: done
   log-when-unavailable: done
   parallel-updates: done
-  reauthentication-flow: done
+  reauthentication-flow:
+    status: done
+    comment: Started at once while setting up, and after two refused logins in a row while running (one refused login is usually a busy single admin session).
   test-coverage:
     status: done
-    comment: Pytest suite with CI gate at 90% (currently ~92%).
+    comment: Pytest suite with CI gate at 90%; synthetic fixtures cover the line states, and the platform tests cover sensor, binary sensor and button.
 
   # --- Gold ---
   devices: done
@@ -91,4 +93,4 @@ rules:
     comment: The client owns its aiohttp session to manage the modem's SID cookie lifecycle; could be migrated to async_get_clientsession.
   strict-typing:
     status: todo
-    comment: Typed throughout and mypy-configured; full strict-typing verification and a py.typed marker are not yet in place.
+    comment: Typed throughout; mypy (strict) runs on the integration in CI. A py.typed marker is not added, and the integration is not part of Home Assistant's strict-typing list.

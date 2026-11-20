@@ -1,0 +1,3 @@
+<ajax_response_xml_root>
+    <IF_ERRORSTR>SessionTimeout</IF_ERRORSTR>
+</ajax_response_xml_root>
