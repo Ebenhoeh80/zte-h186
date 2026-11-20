@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
@@ -47,16 +47,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ZteH186ConfigEntry) -> b
     )
 
     coordinator = ZteH186DataUpdateCoordinator(hass, entry, client)
+
+    async def _async_log_off(_event: Event | None = None) -> None:
+        await client.async_logout()
+
     try:
         await coordinator.async_config_entry_first_refresh()
         await _async_ensure_identity(hass, entry, coordinator)
+        entry.runtime_data = coordinator
+        # Home Assistant stopping does not unload the entries; without this the modem's single
+        # admin session stays occupied for minutes and the next start is refused.
+        entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _async_log_off))
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     except BaseException:
         # A failed setup must not leave the modem's single admin session occupied.
         await client.close()
         raise
-
-    entry.runtime_data = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
@@ -80,13 +86,15 @@ async def _async_ensure_identity(
     A modem that cannot report its serial number right now (for example a busy web interface)
     leaves an older entry as it is; it is migrated at the next setup that succeeds.
     """
+    stored = entry.data.get(CONF_SERIAL)
     try:
         info = await coordinator.client.async_get_device_info()
     except ZteH186Error as err:
-        if entry.data.get(CONF_SERIAL):
+        if stored:
             _LOGGER.debug(
                 "Could not read the device information (%s); using the stored serial number", err
             )
+            _async_migrate_registries(hass, entry, stored)
         else:
             _LOGGER.warning(
                 "Could not read the modem's serial number (%s); "
@@ -97,7 +105,6 @@ async def _async_ensure_identity(
     coordinator.device_info = info
     serial = info.serial_number
 
-    stored = entry.data.get(CONF_SERIAL)
     if stored and stored != serial:
         # Another modem answers at the saved address: its entities must not be mixed into this
         # entry.
@@ -115,59 +122,73 @@ async def _async_ensure_identity(
             translation_placeholders={"title": owner.title},
         )
 
+    # The registries first, the entry last: the migration does not depend on what the entry stores
+    # (so it also heals an entry that a reconfigure, an interrupted setup or a downgrade left
+    # half-way) and can be repeated at every setup.
+    _async_migrate_registries(hass, entry, serial)
     if (
         entry.minor_version < CONFIG_ENTRY_MINOR_VERSION
         or entry.unique_id != serial
         or stored != serial
         or entry.data.get(CONF_MAC) != info.mac_address
     ):
-        await _async_apply_identity(hass, entry, serial, info.mac_address)
+        hass.config_entries.async_update_entry(
+            entry,
+            unique_id=serial,
+            # Only a title the integration generated is replaced; a name the user chose stays.
+            title=modem_title(serial) if is_generated_title(entry.title) else entry.title,
+            data={
+                **entry.data,
+                CONF_SERIAL: serial,
+                **({CONF_MAC: info.mac_address} if info.mac_address else {}),
+            },
+            minor_version=CONFIG_ENTRY_MINOR_VERSION,
+        )
 
 
-async def _async_apply_identity(
-    hass: HomeAssistant, entry: ZteH186ConfigEntry, serial: str, mac: str | None
-) -> None:
-    """Make the serial number the identity of the entry, of its device and of its entities.
+@callback
+def _async_migrate_registries(hass: HomeAssistant, entry: ZteH186ConfigEntry, serial: str) -> None:
+    """Rebind the entities' unique ids and the device identifier to the serial number.
 
-    The title is only replaced if the integration generated it; a name the user chose stays.
-    Entities
-    keep their entity ids (only the unique id changes), so history, areas and customisations stay.
+    Everything an older version bound to the config entry id, to the address or to the address in
+    the unique id of the entry is moved; entity ids, areas, names and history stay (only the unique
+    id changes). Nothing happens when everything is bound to the serial number already.
     """
-    old_key = entry.data.get(CONF_SERIAL) or entry.entry_id
-    hass.config_entries.async_update_entry(
-        entry,
-        unique_id=serial,
-        title=modem_title(serial) if is_generated_title(entry.title) else entry.title,
-        data={**entry.data, CONF_SERIAL: serial, **({CONF_MAC: mac} if mac else {})},
-        minor_version=CONFIG_ENTRY_MINOR_VERSION,
-    )
-    await _async_migrate_registries(hass, entry, old_key, serial)
+    old_keys = {entry.entry_id, entry.data.get(CONF_HOST, "").lower()}
+    if entry.unique_id and entry.unique_id != serial:
+        old_keys.add(entry.unique_id.lower())
+    old_keys.discard("")
+    old_keys.discard(serial.lower())
 
-
-async def _async_migrate_registries(
-    hass: HomeAssistant, entry: ZteH186ConfigEntry, old_key: str, serial: str
-) -> None:
-    """Rebind the entities' unique ids and the device identifier from the old key to the serial
-    number."""
-    if old_key == serial:
-        return
-    old_prefix = f"{old_key}_"
-
-    @callback
-    def _migrate_entity(entity_entry: er.RegistryEntry) -> dict[str, str] | None:
-        if entity_entry.unique_id.startswith(old_prefix):
-            return {"new_unique_id": f"{serial}_{entity_entry.unique_id[len(old_prefix) :]}"}
-        return None
-
-    try:
-        await er.async_migrate_entries(hass, entry.entry_id, _migrate_entity)
-    except ValueError as err:  # a unique id of the new form exists already
-        _LOGGER.error("Could not move the entities to the serial number: %s", err)
+    ent_reg = er.async_get(hass)
+    new_prefix = f"{serial}_"
+    for entity_entry in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        if entity_entry.unique_id.startswith(new_prefix):
+            continue
+        for key in old_keys:
+            old_prefix = f"{key}_"
+            if not entity_entry.unique_id.startswith(old_prefix):
+                continue
+            new_unique_id = f"{new_prefix}{entity_entry.unique_id[len(old_prefix) :]}"
+            clash = ent_reg.async_get_entity_id(entity_entry.domain, DOMAIN, new_unique_id)
+            if clash is not None:
+                # An older version that ran after a downgrade created it next to the original; the
+                # original carries the history and the customisations.
+                ent_reg.async_remove(clash)
+            ent_reg.async_update_entity(entity_entry.entity_id, new_unique_id=new_unique_id)
+            break
 
     dev_reg = dr.async_get(hass)
-    device = _async_get_entry_device(dev_reg, entry, (DOMAIN, old_key))
-    if device is not None and (DOMAIN, serial) not in device.identifiers:
-        dev_reg.async_update_device(device.id, new_identifiers={(DOMAIN, serial)})
+    current = _async_get_entry_device(dev_reg, entry, (DOMAIN, serial))
+    for key in old_keys:
+        device = _async_get_entry_device(dev_reg, entry, (DOMAIN, key))
+        if device is None or (current is not None and device.id == current.id):
+            continue
+        if current is None:
+            dev_reg.async_update_device(device.id, new_identifiers={(DOMAIN, serial)})
+            current = device
+        else:
+            dev_reg.async_remove_device(device.id)  # a duplicate that an older version created
 
 
 def _async_get_entry_device(

@@ -25,6 +25,30 @@ DEVICE_INFO_PATH = "/common_page/ManagReg_lua.lua"
 _SERIAL_PATTERN = re.compile(r"^[A-Za-z0-9]{6,32}$")
 
 
+def _decode_references(text: str) -> str:
+    """Decode the numeric character references (``&#72;``) the login page writes its title in.
+
+    A value that is not a character (a device that is not an H186 may send anything) is kept as
+    it is.
+    """
+
+    def _char(match: re.Match[str]) -> str:
+        try:
+            return chr(int(match.group(1)))
+        except (ValueError, OverflowError):
+            return match.group(0)
+
+    return re.sub(r"&#(\d{1,7});", _char, text)
+
+
+def _normalise_mac(value: str | None) -> str | None:
+    """Return the hardware address in the form Home Assistant uses (``aa:bb:cc:dd:ee:ff``)."""
+    digits = re.sub(r"[^0-9A-Fa-f]", "", value or "")
+    if len(digits) != 12:
+        return None
+    return ":".join(digits[i : i + 2] for i in range(0, 12, 2)).lower()
+
+
 class ZteH186Error(Exception):
     """Base exception for ZTE H186."""
 
@@ -395,7 +419,7 @@ class ZteH186ApiClient:
                 raise ZteH186ProtocolError("The modem did not report a usable serial number.")
             return ZteH186DeviceInfo(
                 serial_number=serial,
-                mac_address=(values.get("MACAddress") or "").strip().lower() or None,
+                mac_address=_normalise_mac(values.get("MACAddress")),
                 model=values.get("ModelName") or None,
                 hardware_version=values.get("HardwareVer") or None,
                 software_version=values.get("SoftwareVer") or None,
@@ -435,7 +459,9 @@ class ZteH186ApiClient:
         unreachable."""
         try:
             async with asyncio.timeout(5):
-                async with session.get(ZteH186ApiClient._format_base_url(host) + "/") as resp:
+                async with session.get(
+                    ZteH186ApiClient._format_base_url(host) + "/", allow_redirects=False
+                ) as resp:
                     if resp.status != 200:
                         return None
                     text = await resp.text(encoding="latin-1", errors="replace")
@@ -445,7 +471,7 @@ class ZteH186ApiClient:
         if not match:
             return None
         # The page writes the title as HTML character references (&#72;&#49;...).
-        return re.sub(r"&#(\d+);", lambda m: chr(int(m.group(1))), match.group(1)).strip() or None
+        return _decode_references(match.group(1)).strip() or None
 
     async def async_get_dsl_stats(self) -> ZteH186Data:
         """Fetch and parse current DSL statistics from the modem."""

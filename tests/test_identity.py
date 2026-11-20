@@ -10,6 +10,7 @@ from homeassistant.config_entries import (
     SOURCE_USER,
     ConfigEntryState,
 )
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -413,7 +414,16 @@ def test_titles_made_by_the_integration_are_recognised(title: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "title", ["Modem Keller", "ZTE H186 DSL Modem Keller", "my ZTE H186 (x)", ""]
+    "title",
+    [
+        "Modem Keller",
+        "ZTE H186 DSL Modem Keller",
+        "my ZTE H186 (x)",
+        "",
+        "ZTE H186 Keller",
+        "ZTE H186 Wohnzimmer",
+        "ZTE H186 Modem1",
+    ],
 )
 def test_titles_chosen_by_the_user_are_left_alone(title: str) -> None:
     from custom_components.zte_h186.identity import is_generated_title
@@ -427,3 +437,130 @@ def test_the_identity_key_is_the_serial_number_or_the_entry_id_until_it_is_known
     assert identity_key("entry1", {CONF_SERIAL: SERIAL}) == SERIAL
     assert identity_key("entry1", {}) == "entry1"
     assert MagicMock  # imported for the discovery tests
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ("192.168.10.2", "http://192.168.10.2/"),
+        ("Modem.Local", "modem.local."),
+        ("fe80::1", "[FE80:0:0:0:0:0:0:1]"),
+    ],
+)
+def test_the_same_host_is_recognised_in_other_spellings(first: str, second: str) -> None:
+    from custom_components.zte_h186.identity import same_host
+
+    assert same_host(first, second)
+    assert not same_host(first, "192.168.10.99")
+
+
+# ------------------------------------------------------------------ registries (heal, clash)
+
+
+def _to_old_keys(hass: HomeAssistant, entry: MockConfigEntry, key: str) -> None:
+    ent_reg = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        ent_reg.async_update_entity(
+            entity.entity_id, new_unique_id=entity.unique_id.replace(SERIAL, key)
+        )
+    dev_reg = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+        dev_reg.async_update_device(device.id, new_identifiers={(DOMAIN, key)})
+
+
+async def test_a_reconfigured_entry_of_an_older_version_keeps_its_entities(
+    hass: HomeAssistant, mock_client
+) -> None:
+    """The reconfigure writes the serial number first; the registries still follow at the reload."""
+    entry = _legacy()
+    await _setup(hass, entry)
+    entities, devices = _snapshot(hass, entry)
+    _to_old_keys(hass, entry, HOST)  # the entities of 1.2.x carry the address
+    hass.config_entries.async_update_entry(
+        entry,
+        minor_version=1,
+        unique_id=HOST,
+        data={k: v for k, v in entry.data.items() if k not in (CONF_SERIAL, CONF_MAC)},
+    )
+    await hass.config_entries.async_unload(entry.entry_id)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST, CONF_USERNAME: "admin", CONF_PASSWORD: "secret"}
+    )
+    await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.state is ConfigEntryState.LOADED
+    assert _snapshot(hass, entry) == (entities, devices)
+    ent_reg = er.async_get(hass)
+    assert all(
+        e.unique_id.startswith(f"{SERIAL}_")
+        for e in er.async_entries_for_config_entry(ent_reg, entry.entry_id)
+    )
+
+
+async def test_an_entry_that_was_left_half_migrated_is_healed(
+    hass: HomeAssistant, mock_client
+) -> None:
+    entry = _modern()
+    await _setup(hass, entry)
+    entities, devices = _snapshot(hass, entry)
+    _to_old_keys(hass, entry, entry.entry_id)  # the entry says "done", the registries do not
+    await hass.config_entries.async_unload(entry.entry_id)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _snapshot(hass, entry) == (entities, devices)
+    (device,) = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert device.identifiers == {(DOMAIN, SERIAL)}
+
+
+async def test_an_entity_created_twice_by_a_downgrade_leaves_one(
+    hass: HomeAssistant, mock_client
+) -> None:
+    entry = _modern()
+    await _setup(hass, entry)
+    ent_reg = er.async_get(hass)
+    original = next(iter(er.async_entries_for_config_entry(ent_reg, entry.entry_id)))
+    suffix = original.unique_id[len(f"{SERIAL}_") :]
+    await hass.config_entries.async_unload(entry.entry_id)
+    # 1.4.x ran in between: it created its own copy, bound to the entry id
+    ent_reg.async_update_entity(original.entity_id, new_unique_id=f"{entry.entry_id}_{suffix}")
+    ent_reg.async_get_or_create(
+        original.domain, DOMAIN, f"{SERIAL}_{suffix}", config_entry=entry, suggested_object_id="x"
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    kept = ent_reg.async_get(original.entity_id)
+    assert kept is not None
+    assert kept.unique_id == f"{SERIAL}_{suffix}"
+    same = [
+        e
+        for e in er.async_entries_for_config_entry(ent_reg, entry.entry_id)
+        if e.unique_id == f"{SERIAL}_{suffix}"
+    ]
+    assert len(same) == 1
+
+
+async def test_the_device_keeps_what_it_knows_when_the_modem_does_not_answer_at_setup(
+    hass: HomeAssistant, mock_client
+) -> None:
+    entry = _modern()
+    await _setup(hass, entry)
+    await hass.config_entries.async_unload(entry.entry_id)
+    mock_client.async_get_device_info.side_effect = ZteH186ProtocolError("busy")
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    (device,) = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    assert device.serial_number == SERIAL
+    assert device.sw_version == "V1.0.0TY.1T2"
+
+
+async def test_stopping_home_assistant_logs_off_from_the_modem(
+    hass: HomeAssistant, mock_client
+) -> None:
+    entry = _modern()
+    await _setup(hass, entry)
+    mock_client.async_logout.reset_mock()
+    hass.bus.async_fire(EVENT_HOMEASSISTANT_STOP)
+    await hass.async_block_till_done()
+    mock_client.async_logout.assert_awaited()

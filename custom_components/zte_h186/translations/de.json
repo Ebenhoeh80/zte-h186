@@ -1,6 +1,6 @@
 {
   "config": {
-  "flow_title": "{name}",
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "ZTE H186 Modem verbinden",

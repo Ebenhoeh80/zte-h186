@@ -190,3 +190,36 @@ async def test_an_unreachable_device_has_no_model() -> None:
     session = MagicMock()
     session.get.side_effect = aiohttp.ClientError("no route")
     assert await ZteH186ApiClient.async_probe_model("192.168.10.2", session) is None
+
+
+async def test_a_title_with_a_nonsense_reference_does_not_break_the_probe() -> None:
+    session = MagicMock()
+    session.get.return_value = Resp(200, "<title>&#99999999;H186&#72;</title>")
+    model = await ZteH186ApiClient.async_probe_model("192.168.10.2", session)
+    assert model is not None
+    assert "H186" in model
+
+
+async def test_the_probe_does_not_follow_redirects() -> None:
+    session = MagicMock()
+    session.get.return_value = Resp(200, "<title>H186</title>")
+    await ZteH186ApiClient.async_probe_model("192.168.10.2", session)
+    assert session.get.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("DC:F8:B9:00:11:22", "dc:f8:b9:00:11:22"),
+        ("dc-f8-b9-00-11-22", "dc:f8:b9:00:11:22"),
+        ("dcf8b9001122", "dc:f8:b9:00:11:22"),
+        ("nonsense", None),
+        (None, None),
+    ],
+)
+def test_the_hardware_address_is_written_the_way_home_assistant_does(
+    value: str | None, expected: str | None
+) -> None:
+    from custom_components.zte_h186.api import _normalise_mac
+
+    assert _normalise_mac(value) == expected

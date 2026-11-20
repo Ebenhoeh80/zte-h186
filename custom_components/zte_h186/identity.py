@@ -11,6 +11,7 @@ the prefix of the entities' unique ids. See docs/IDENTITY.md.
 from __future__ import annotations
 
 from collections.abc import Mapping
+import ipaddress
 import re
 from typing import Any
 
@@ -18,7 +19,26 @@ from .const import CONF_SERIAL, TITLE_PREFIX
 
 # "ZTE H186 (192.168.10.2)" is what versions up to 1.4.1 generated; "ZTE H186 <serial>" is the new
 # form.
-_GENERATED_TITLE = re.compile(rf"^{re.escape(TITLE_PREFIX)}( \(.*\)| [A-Za-z0-9]{{6,32}})?$")
+# The serial number form is exact (capital letters and digits, at least one digit, 10 or more
+# characters) so that a name such as "ZTE H186 Keller" is never mistaken for a generated title.
+_GENERATED_TITLE = re.compile(
+    rf"^{re.escape(TITLE_PREFIX)}( \(.*\)| (?=[A-Z0-9]*\d)[A-Z0-9]{{10,32}})?$"
+)
+
+
+def same_host(first: str, second: str) -> bool:
+    """Return True if two stored addresses name the same host (case, scheme, slashes and a
+    trailing dot do not matter)."""
+
+    def _clean(value: str) -> str:
+        value = value.strip().lower()
+        value = re.sub(r"^https?://", "", value).split("/")[0]
+        try:
+            return str(ipaddress.ip_address(value.strip("[]")))
+        except ValueError:
+            return value.rstrip(".")
+
+    return _clean(first) == _clean(second)
 
 
 def modem_title(serial: str) -> str:

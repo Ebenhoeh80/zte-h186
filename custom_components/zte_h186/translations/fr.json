@@ -1,6 +1,6 @@
 {
   "config": {
-  "flow_title": "{name}",
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Connecter le modem ZTE H186",

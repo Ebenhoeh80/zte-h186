@@ -40,7 +40,7 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
-from .identity import is_generated_title, modem_title
+from .identity import is_generated_title, modem_title, same_host
 
 if TYPE_CHECKING:
     from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
@@ -67,7 +67,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered_host: str | None = None
 
     async def _async_validate_input(
-        self, user_input: Mapping[str, Any], *, release_entry: ConfigEntry | None = None
+        self, user_input: Mapping[str, Any], *, release_entries: list[ConfigEntry] | None = None
     ) -> tuple[dict[str, str], ZteH186DeviceInfo | None]:
         """Connect to the modem and return the errors, and what the modem says about itself.
 
@@ -76,8 +76,9 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         errors: dict[str, str] = {}
         info: ZteH186DeviceInfo | None = None
-        if release_entry is not None and release_entry.state is ConfigEntryState.LOADED:
-            await release_entry.runtime_data.client.async_logout()
+        for running in release_entries or []:
+            if running.state is ConfigEntryState.LOADED:
+                await running.runtime_data.client.async_logout()
 
         client = ZteH186ApiClient(
             host=user_input[CONF_HOST],
@@ -107,7 +108,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
     def _entry_at_address(self, host: str) -> ConfigEntry | None:
         """Return the entry that manages the modem at this address, if there is one."""
         for entry in self._async_current_entries(include_ignore=False):
-            if entry.data.get(CONF_HOST, "").lower() == host.lower():
+            if same_host(entry.data.get(CONF_HOST, ""), host):
                 return entry
         return None
 
@@ -127,7 +128,11 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
             if at_address is not None and not at_address.data.get(CONF_SERIAL):
                 return self.async_abort(reason="already_configured")
 
-            errors, info = await self._async_validate_input(user_input, release_entry=at_address)
+            # Any running entry may be the modem that is entered (under another name); the modem
+            # has one admin session, so all of them are released for the check.
+            errors, info = await self._async_validate_input(
+                user_input, release_entries=self._async_current_entries(include_ignore=False)
+            )
 
             if not errors and info is not None:
                 # The modem is identified by its serial number, never by the address it was found
@@ -177,7 +182,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                     self.hass.config_entries.async_schedule_reload(entry.entry_id)
                 return self.async_abort(reason="already_configured")
-            if entry.data.get(CONF_HOST, "").lower() == host.lower():
+            if same_host(entry.data.get(CONF_HOST, ""), host):
                 return self.async_abort(reason="already_configured")
 
         model = await ZteH186ApiClient.async_probe_model(host, async_get_clientsession(self.hass))
@@ -198,7 +203,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             user_input[CONF_HOST] = user_input[CONF_HOST].strip()
             combined_input = {**entry.data, **user_input}
-            errors, info = await self._async_validate_input(combined_input, release_entry=entry)
+            errors, info = await self._async_validate_input(combined_input, release_entries=[entry])
 
             if not errors and info is not None:
                 stored = entry.data.get(CONF_SERIAL)

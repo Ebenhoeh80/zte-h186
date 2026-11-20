@@ -36,7 +36,7 @@ is only a second characteristic.
 before 1.5.0 never logged out, so after a reload, a restart or a setup dialog the next login was refused for
 some minutes and Home Assistant started a re-authentication that was not needed. From 1.5.0 the client logs off
 (`POST /` with `IF_LogOff=1`, the request of the web UI's logout link) when it is closed, after a failed setup and
-before a dialog checks a running entry.
+before a dialog checks a running entry, and when Home Assistant stops (stopping does not unload the entries).
 
 ## Rules in the code
 
@@ -47,8 +47,11 @@ before a dialog checks a running entry.
 2. **Older entries are migrated at their next successful setup** (the serial number comes from the modem, so it
    cannot happen while the modem is unreachable): `unique_id`, title (if it was generated), `data` (serial number,
    MAC address), minor version 2; the entities' unique ids move from `<entry id>_<key>` to `<serial>_<key>` and the
-   device identifier from `(zte_h186, <entry id>)` to `(zte_h186, <serial>)`. Entity ids, names, areas, history
-   and customisations are untouched: only the unique id changes. A modem that cannot report its serial number at
+   device identifier from `(zte_h186, <entry id>)` (or the address, in the oldest entries) to `(zte_h186, <serial>)`.
+   The registries are migrated first and the entry last, independently of what the entry stores, and again at
+   every setup: an entry that a reconfigure, an interrupted setup or a downgrade left half-way is healed, and an
+   entity that an older version created a second time after a downgrade is removed in favour of the original.
+   Entity ids, names, areas, history and customisations are untouched: only the unique id changes. A modem that cannot report its serial number at
    that moment leaves the entry as it is.
 3. **The modem that answers must be the modem of the entry.** Every setup compares the serial number with the
    stored one. A different modem at the saved address stops the setup with a clear message and creates nothing;
@@ -60,7 +63,13 @@ before a dialog checks a running entry.
    without logging in). The login credentials are asked for in the usual dialog; the serial number is read after it.
 6. **Dialogs release the single session.** Checking a running entry first logs its client off; the client logs in
    again by itself at the next poll.
-7. **An entry whose identity was overwritten** (a downgrade) is put right at its next setup.
+7. **An entry whose identity was overwritten** (a downgrade) is put right at its next setup, registries included.
+8. **The device keeps what it knows.** Serial number and versions that the modem did not report at this setup are
+   not sent to the registry as empty values.
+
+Known limit: an entry of an older version whose modem changed its address before the entry could read the serial
+number has no way to recognise the modem; adding the modem then creates a second entry, and the old one stops with
+the message that the modem is used by another entry. Reconfigure the old entry instead (it adopts the serial number).
 
 ## Decisions and rejected options
 
@@ -74,3 +83,5 @@ before a dialog checks a running entry.
   An entry that has never been able to read it stays as it is until it can.
 - **Minor, not major version:** the data stays readable by older code.
 - **Reauth** keeps working as before and additionally refuses a different modem.
+- **Removing and adding the integration again:** Home Assistant restores entity id, name and area from its
+  registry of deleted entities for 30 days; after that they are created anew.

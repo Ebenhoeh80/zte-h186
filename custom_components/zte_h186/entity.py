@@ -6,7 +6,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .const import CONF_SERIAL, DOMAIN, MANUFACTURER, MODEL
 from .coordinator import ZteH186DataUpdateCoordinator
 from .identity import identity_key
 
@@ -34,13 +34,19 @@ class ZteH186Entity(CoordinatorEntity[ZteH186DataUpdateCoordinator]):
         key = identity_key(entry.entry_id, entry.data)
         self._attr_unique_id = f"{key}_{description.key}"
         info = coordinator.device_info
-        self._attr_device_info = DeviceInfo(
+        device_info = DeviceInfo(
             identifiers={(DOMAIN, key)},
             manufacturer=MANUFACTURER,
             model=(info.model if info else None) or MODEL,
             name="ZTE H186",
             configuration_url=coordinator.client.base_url,
-            serial_number=info.serial_number if info else None,
-            hw_version=info.hardware_version if info else None,
-            sw_version=info.software_version if info else None,
         )
+        # What is not known right now (the modem did not answer at setup) is left out, so a value
+        # that the registry has stays.
+        if serial := entry.data.get(CONF_SERIAL):
+            device_info["serial_number"] = serial
+        if info and info.hardware_version:
+            device_info["hw_version"] = info.hardware_version
+        if info and info.software_version:
+            device_info["sw_version"] = info.software_version
+        self._attr_device_info = device_info
