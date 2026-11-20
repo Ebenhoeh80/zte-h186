@@ -9,6 +9,7 @@ import ipaddress
 import logging
 import re
 import time
+from typing import Any, Final, Literal
 import xml.etree.ElementTree as ET
 
 import aiohttp
@@ -117,6 +118,80 @@ class ZteH186Data:
     raw_values: dict[str, str] | None = None
 
 
+@dataclass(slots=True, frozen=True)
+class _DslField:
+    """How one value of the modem's DSL answer becomes one attribute of ``ZteH186Data``."""
+
+    attr: str  # attribute of ZteH186Data
+    key: str  # name of the value in the modem's answer
+    kind: Literal["float", "int", "str"]
+    divisor: float = 1.0  # the modem reports kbit/s and tenths of dB
+    required: bool = False  # expected whenever the line is Up
+
+
+# One table for every value: the divisors and the names of the modem's keys live only here.
+DSL_FIELDS: Final[tuple[_DslField, ...]] = (
+    _DslField("downstream_sync", "Downstream_current_rate", "float", 1000.0, True),
+    _DslField("upstream_sync", "Upstream_current_rate", "float", 1000.0, True),
+    _DslField("downstream_max", "Downstream_max_rate", "float", 1000.0, True),
+    _DslField("upstream_max", "Upstream_max_rate", "float", 1000.0, True),
+    _DslField("downstream_snr", "Downstream_noise_margin", "float", 10.0, True),
+    _DslField("upstream_snr", "Upstream_noise_margin", "float", 10.0, True),
+    _DslField("downstream_attenuation", "Downstream_attenuation", "float", 10.0, True),
+    _DslField("upstream_attenuation", "Upstream_attenuation", "float", 10.0, True),
+    _DslField("profile", "CurrentProfile", "str", required=True),
+    _DslField("modulation", "Module_type", "str", required=True),
+    _DslField("downstream_power", "Downstream_power", "float", 10.0),
+    _DslField("upstream_power", "Upstream_power", "float", 10.0),
+    _DslField("data_path", "Data_path", "str"),
+    _DslField("downstream_interleave_depth", "DownInterleavedepth", "int"),
+    _DslField("upstream_interleave_depth", "UpInterleaveDepth", "int"),
+    _DslField("downstream_interleave_delay", "DownInterleaveDelay", "int"),
+    _DslField("upstream_interleave_delay", "UpInterleaveDelay", "int"),
+    _DslField("downstream_inp", "DownstreamInp", "float", 10.0),
+    _DslField("upstream_inp", "UpstreamInp", "float", 10.0),
+    _DslField("showtime", "Showtime_start", "int"),
+    _DslField("link_encapsulation", "tLinkEncapsulationUsed", "str"),
+    _DslField("downstream_crc", "DownCrc_errors", "int"),
+    _DslField("upstream_crc", "UpCrc_errors", "int"),
+    _DslField("downstream_fec", "Fec_errors", "int"),
+    _DslField("upstream_fec", "Atuc_fec_errors", "int"),
+)
+_STATUS_KEY: Final = "Status"
+
+
+def _convert(field: _DslField, text: str | None) -> float | int | str | None:
+    """Convert one value of the answer; ``None`` if it is absent or not a number."""
+    if not text:
+        return None
+    if field.kind == "str":
+        return text
+    try:
+        if field.kind == "int":
+            return int(text)
+        return float(text) / field.divisor
+    except ValueError:
+        return None
+
+
+def parse_dsl_values(values: dict[str, str]) -> tuple[ZteH186Data, list[str]]:
+    """Turn the modem's name-value pairs into ``ZteH186Data``.
+
+    A value the modem leaves out is ``None`` (unknown), never a made-up number. Returns the data and
+    the required values that are missing although the line is Up (empty while it trains or is
+    Down, when the modem leaves them out by design). Raises ``ZteH186ProtocolError`` only for an
+    answer that holds none of the known values at all.
+    """
+    if _STATUS_KEY not in values and not any(f.key in values for f in DSL_FIELDS):
+        raise ZteH186ProtocolError("The modem's DSL answer contains no DSL values.")
+    status = values.get(_STATUS_KEY, "Down")
+    is_up = status.strip().lower() == "up"
+    missing = [f.key for f in DSL_FIELDS if f.required and f.key not in values] if is_up else []
+    converted: dict[str, Any] = {f.attr: _convert(f, values.get(f.key)) for f in DSL_FIELDS}
+    data = ZteH186Data(**converted, dsl_status=status, raw_values=values)
+    return data, missing
+
+
 class ZteH186ApiClient:
     """API client interacting with ZTE H186 modem via HTTP web endpoints."""
 
@@ -139,6 +214,8 @@ class ZteH186ApiClient:
         self._is_authenticated = False
         self._sid: str | None = None
         self._lock = asyncio.Lock()
+        # The required values that were reported missing last time (logged once, see parse).
+        self._warned_missing: frozenset[str] = frozenset()
 
     @property
     def base_url(self) -> str:
@@ -520,79 +597,16 @@ class ZteH186ApiClient:
             if error not in ("", "SUCC"):
                 raise ZteH186ProtocolError(f"Modem returned error: {error}")
 
-            required_keys = (
-                "Downstream_current_rate",
-                "Upstream_current_rate",
-                "Downstream_max_rate",
-                "Upstream_max_rate",
-                "Downstream_noise_margin",
-                "Upstream_noise_margin",
-                "Downstream_attenuation",
-                "Upstream_attenuation",
-                "CurrentProfile",
-                "Module_type",
-            )
-            missing = [k for k in required_keys if k not in values]
-            dsl_status = values.get("Status", "Down")
-            is_up = str(dsl_status).strip().lower() == "up"
-
-            if missing and is_up:
-                raise ZteH186ProtocolError(
-                    "Missing required fields in DSL response while link is Up: "
-                    f"{', '.join(missing)}"
+        data, missing = parse_dsl_values(values)
+        if missing:
+            # One warning per set of missing fields (not one per poll); the values are unknown.
+            if frozenset(missing) != self._warned_missing:
+                self._warned_missing = frozenset(missing)
+                _LOGGER.warning(
+                    "The modem reports the line as Up but leaves out: %s. These values are unknown "
+                    "(None) until the modem sends them; this may be a firmware difference",
+                    ", ".join(missing),
                 )
-            if missing:
-                _LOGGER.debug(
-                    "DSL line not in Showtime (Status=%s). "
-                    "Reporting 'unknown' for missing fields: %s",
-                    dsl_status,
-                    missing,
-                )
-
-        def _to_opt_float(key: str, divisor: float = 1.0) -> float | None:
-            val = values.get(key)
-            if not val:
-                return None
-            try:
-                return float(val) / divisor
-            except ValueError:
-                return None
-
-        def _to_opt_int(key: str) -> int | None:
-            val = values.get(key)
-            if not val:
-                return None
-            try:
-                return int(val)
-            except ValueError:
-                return None
-
-        return ZteH186Data(
-            downstream_sync=_to_opt_float("Downstream_current_rate", 1000.0),
-            upstream_sync=_to_opt_float("Upstream_current_rate", 1000.0),
-            downstream_max=_to_opt_float("Downstream_max_rate", 1000.0),
-            upstream_max=_to_opt_float("Upstream_max_rate", 1000.0),
-            downstream_snr=_to_opt_float("Downstream_noise_margin", 10.0),
-            upstream_snr=_to_opt_float("Upstream_noise_margin", 10.0),
-            downstream_attenuation=_to_opt_float("Downstream_attenuation", 10.0),
-            upstream_attenuation=_to_opt_float("Upstream_attenuation", 10.0),
-            profile=values.get("CurrentProfile"),
-            modulation=values.get("Module_type"),
-            dsl_status=values.get("Status", "Down"),
-            downstream_power=_to_opt_float("Downstream_power", 10.0),
-            upstream_power=_to_opt_float("Upstream_power", 10.0),
-            data_path=values.get("Data_path"),
-            downstream_interleave_depth=_to_opt_int("DownInterleavedepth"),
-            upstream_interleave_depth=_to_opt_int("UpInterleaveDepth"),
-            downstream_interleave_delay=_to_opt_int("DownInterleaveDelay"),
-            upstream_interleave_delay=_to_opt_int("UpInterleaveDelay"),
-            downstream_inp=_to_opt_float("DownstreamInp", 10.0),
-            upstream_inp=_to_opt_float("UpstreamInp", 10.0),
-            showtime=_to_opt_int("Showtime_start"),
-            link_encapsulation=values.get("tLinkEncapsulationUsed"),
-            downstream_crc=_to_opt_int("DownCrc_errors"),
-            upstream_crc=_to_opt_int("UpCrc_errors"),
-            downstream_fec=_to_opt_int("Fec_errors"),
-            upstream_fec=_to_opt_int("Atuc_fec_errors"),
-            raw_values=values,
-        )
+        else:
+            self._warned_missing = frozenset()
+        return data

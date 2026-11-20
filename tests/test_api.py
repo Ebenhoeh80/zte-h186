@@ -472,13 +472,39 @@ class ApiErrorPathTests(unittest.IsolatedAsyncioTestCase):
             await _client(mock_session).async_login()
 
     async def test_missing_required_fields_when_up(self):
-        """Status=Up but missing rate fields raises ZteH186ProtocolError."""
+        """Status=Up but missing rate fields gives unknown values and one warning, no error."""
         xml = (
             "<ajax_response_xml_root>"
             "<IF_ERRORSTR>SUCC</IF_ERRORSTR>"
             "<Instance><ParaName>Status</ParaName><ParaValue>Up</ParaValue></Instance>"
             "</ajax_response_xml_root>"
         )
+        mock_session = MagicMock()
+        mock_session.get.side_effect = [
+            _Resp(200, SAMPLE_LOGIN_HTML),
+            _Resp(200, "12345678"),
+            _Resp(200, '<html>"internet_dsl_interface_lua.lua"</html>'),
+            _Resp(200, xml),
+        ]
+        mock_session.post.return_value = _Resp(200, "", sid="sid_x")
+        client = _client(mock_session)
+        with self.assertLogs("custom_components.zte_h186.api", "WARNING") as logs:
+            stats = await client.async_get_dsl_stats()
+        self.assertEqual(stats.dsl_status, "Up")
+        self.assertIsNone(stats.downstream_sync)
+        self.assertIsNone(stats.profile)
+        self.assertEqual(len(logs.records), 1)
+        self.assertIn("Downstream_current_rate", logs.output[0])
+        self.assertIn("Module_type", logs.output[0])
+
+        # The same gap at the next poll is not logged again.
+        mock_session.get.side_effect = [_Resp(200, xml)]
+        with self.assertNoLogs("custom_components.zte_h186.api", "WARNING"):
+            await client.async_get_dsl_stats()
+
+    async def test_empty_answer_is_a_protocol_error(self):
+        """An answer without any DSL value is invalid and is an error (not 30 silent unknowns)."""
+        xml = "<ajax_response_xml_root><IF_ERRORSTR>SUCC</IF_ERRORSTR></ajax_response_xml_root>"
         mock_session = MagicMock()
         mock_session.get.side_effect = [
             _Resp(200, SAMPLE_LOGIN_HTML),
