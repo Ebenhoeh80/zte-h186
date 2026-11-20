@@ -370,7 +370,7 @@ class ZteH186ApiClient:
         hex_bytes = "".join(re.findall(r"\\x([0-9a-fA-F]{2})", match.group(1)))
         try:
             return bytes.fromhex(hex_bytes).decode("ascii", errors="replace")
-        except Exception as err:
+        except ValueError as err:
             raise ZteH186ProtocolError(f"Failed to decode session token: {err}") from err
 
     @staticmethod
@@ -483,8 +483,8 @@ class ZteH186ApiClient:
                 cookies = session.cookie_jar.filter_cookies(self._base_url)
                 if "SID" in cookies and cookies["SID"].value:
                     self._sid = cookies["SID"].value
-            except Exception:
-                pass
+            except (AttributeError, KeyError, TypeError, ValueError) as err:
+                _LOGGER.debug("The cookie jar holds no usable SID cookie: %s", err)
 
         if not self._sid:
             raise ZteH186AuthError(

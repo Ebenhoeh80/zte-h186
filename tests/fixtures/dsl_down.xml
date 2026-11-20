@@ -1,0 +1,9 @@
+<ajax_response_xml_root>
+    <IF_ERRORSTR>SUCC</IF_ERRORSTR>
+    <IF_ERRORPARAM>SUCC</IF_ERRORPARAM>
+    <IF_ERRORTYPE>SUCC</IF_ERRORTYPE>
+    <Instance>
+        <ParaName>Status</ParaName>
+        <ParaValue>Down</ParaValue>
+    </Instance>
+</ajax_response_xml_root>

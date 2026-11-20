@@ -31,6 +31,33 @@ client extracts current and attainable downstream/upstream rates, noise
 margins, attenuation, profile, and modulation. Rates are reported in Mbit/s;
 noise margins and attenuation are reported in dB.
 
-The client validates the expected fields and fails with a concise error if the
-router reports a session error or an incomplete response. It does not change
-router configuration.
+A value the modem leaves out is unknown (`None`), never a made-up number. While the line trains
+or is down the modem omits the metrics by design. If it reports `Status=Up` but leaves out
+required values, the client keeps what it got and logs one warning that names the missing
+values. Only an answer that holds no DSL value at all, invalid XML, a modem error or a session
+error is a failure. The table of keys, divisors and required values is `DSL_FIELDS` in
+`custom_components/zte_h186/api.py`.
+
+The client reads at most 512 KiB of a page, 4 KiB of the login token and 256 KiB of an XML
+answer; a larger answer is refused. It does not change router configuration.
+
+## Test fixtures and captures
+
+`tests/fixtures/*.xml` holds **synthetic** answers (line up, training, down, up with missing
+values, device information, session timeout). Every value is invented; tests parse them and
+run the client against them.
+
+To add an answer that a real modem sent (for example a firmware that behaves differently),
+anonymize it first, then check it by eye:
+
+```sh
+python scripts/anonymize_capture.py capture.xml > tests/fixtures/new_answer.xml
+```
+
+The script replaces serial numbers, hardware (MAC) addresses, IPv4 and IPv6 addresses, the
+names of Wi-Fi networks, session ids (`SID=`) and the values of credential-like parameters
+(password, key, token, user name) with synthetic values; the same original always becomes the
+same replacement. Add values it cannot know with `--serial`, `--ssid` or `--replace OLD=NEW`
+(for example the name of your provider or a host name). It is a safety net: **read the result
+before you share it** in an issue or pull request, and never share the unprocessed capture.
+Do not add captures that contain anything personal.

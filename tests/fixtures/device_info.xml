@@ -1,0 +1,21 @@
+<ajax_response_xml_root>
+    <IF_ERRORSTR>SUCC</IF_ERRORSTR>
+    <OBJ_DEVINFO_ID>
+        <Instance>
+            <ParaName>ModelName</ParaName>
+            <ParaValue>H186</ParaValue>
+            <ParaName>SerialNumber</ParaName>
+            <ParaValue>ZTE0123456789A42</ParaValue>
+            <ParaName>MACAddress</ParaName>
+            <ParaValue>DC:F8:B9:00:11:22</ParaValue>
+            <ParaName>HardwareVer</ParaName>
+            <ParaValue>V1.0.0</ParaValue>
+            <ParaName>SoftwareVer</ParaName>
+            <ParaValue>V1.0.0TY.1T2</ParaValue>
+            <ParaName>BootVer</ParaName>
+            <ParaValue>V1.0.0</ParaValue>
+            <ParaName>ModelFirmwareVer</ParaName>
+            <ParaValue>8B1017_8B0701</ParaValue>
+        </Instance>
+    </OBJ_DEVINFO_ID>
+</ajax_response_xml_root>
