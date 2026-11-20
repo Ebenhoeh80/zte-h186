@@ -371,7 +371,8 @@ async def test_dhcp_offers_an_unknown_h186_with_its_address_prefilled(
     )
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
-    assert result["data_schema"]({CONF_PASSWORD: "x"})[CONF_HOST] == NEW_HOST
+    host_key = next(key for key in result["data_schema"].schema if key == CONF_HOST)
+    assert host_key.description["suggested_value"] == NEW_HOST
 
 
 async def test_dhcp_ignores_a_device_that_is_not_an_h186(hass: HomeAssistant, mock_client) -> None:
