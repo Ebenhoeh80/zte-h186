@@ -472,13 +472,10 @@ app.get('/api/brands/integration/zte_h186/:file', (req: Request, res: Response) 
 });
 
 // API: Download Release ZIP
+// The zip is built by the release workflow and attached to every GitHub release; no copy is kept in
+// the repository (the old committed v1.3.0 archive was outdated).
 app.get('/api/download/release-zip', (_req: Request, res: Response) => {
-  const zipPath = path.join(__dirname, 'public', 'zte-h186-v1.3.0.zip');
-  if (fs.existsSync(zipPath)) {
-    res.download(zipPath, 'zte-h186-v1.3.0.zip');
-  } else {
-    res.status(404).send('ZIP archive not found');
-  }
+  res.redirect('https://github.com/Ebenhoeh80/zte-h186/releases/latest/download/zte_h186.zip');
 });
 
 // Vite dev middleware or production static

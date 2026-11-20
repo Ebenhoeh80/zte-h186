@@ -49,9 +49,9 @@ jobs:
       - name: Install Ruff
         run: pip install ruff
       - name: Ruff lint
-        run: ruff check custom_components tests
+        run: ruff check custom_components tests scripts
       - name: Ruff format check
-        run: ruff format --check custom_components tests
+        run: ruff format --check custom_components tests scripts
 
   test-python:
     name: Python Tests
@@ -65,6 +65,8 @@ jobs:
           python-version: "3.13"
       - name: Install test dependencies
         run: pip install -r requirements_test.txt
+      - name: Check version consistency
+        run: python scripts/check_versions.py
       - name: Run tests with coverage
         run: >-
           pytest tests
