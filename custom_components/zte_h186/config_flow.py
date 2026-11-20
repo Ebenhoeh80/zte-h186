@@ -17,6 +17,11 @@ from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 import voluptuous as vol
 
 from .api import (
@@ -47,11 +52,13 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST, default="192.168.10.2"): cv.string,
         vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
+        vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
     }
 )
 
@@ -246,7 +253,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_USERNAME,
                     default=entry.data.get(CONF_USERNAME, DEFAULT_USERNAME),
                 ): cv.string,
-                vol.Required(CONF_PASSWORD): cv.string,
+                vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
             }
         )
 
@@ -287,7 +294,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_USERNAME,
                         default=reauth_entry.data.get(CONF_USERNAME, DEFAULT_USERNAME),
                     ): cv.string,
-                    vol.Required(CONF_PASSWORD): cv.string,
+                    vol.Required(CONF_PASSWORD): PASSWORD_SELECTOR,
                 }
             ),
             errors=errors,
