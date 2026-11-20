@@ -62,6 +62,18 @@ Una integración personalizada asíncrona para el **módem DSL ZTE H186**. Lee t
 
 ---
 
+## 🗺️ Hoja de ruta e ideas
+
+Planificado y en estudio — **dale un 👍 a lo que te importe** y aporta tus propias ideas:
+
+- 🔜 Diagnóstico sin la dirección del módem en los mensajes de error
+- 💡 Comprobación estática de tipos (mypy) en la CI
+- 💡 Aviso de reparación cuando el módem no es accesible
+
+➡️ Todas las ideas y votación: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**
+
+---
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT – consulte [LICENSE](LICENSE).  
@@ -73,13 +85,15 @@ Copyright (C) 2026 Daniel Ebenhöh.
 
 <div align="center">
 
-**Desarrollo y mantengo esta integración en mi tiempo libre, y asumo yo mismo los gastos.**
+**Desarrollo y mantengo esta integración en mi tiempo libre y asumo los costes de funcionamiento — mi tiempo, la electricidad y las herramientas de desarrollo y el equipamiento informático que utilizo — de mi propio bolsillo.**
 
-Si te ahorra tiempo o complicaciones, una pequeña donación voluntaria mantiene vivo el proyecto y motiva nuevas funciones.
-Cada aportación, por pequeña que sea, se agradece enormemente. ¡Gracias! 🙏
+Si te ahorra tiempo o problemas, una pequeña propina voluntaria ayuda a mantener el proyecto en marcha. Cada aportación, por pequeña que sea, se agradece enormemente. ¡Gracias! 🙏
 
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
-  <img src="https://img.shields.io/badge/Inv%C3%ADtame%20a%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donar vía PayPal" height="42">
+  <img src="https://img.shields.io/badge/Inv%C3%ADtame%20a%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donar con PayPal" height="42">
+</a>
+<a href="https://buymeacoffee.com/daneben">
+  <img src="https://img.shields.io/badge/%E2%98%95%20Inv%C3%ADtame%20a%20un%20caf%C3%A9-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
 </a>
 
 </div>

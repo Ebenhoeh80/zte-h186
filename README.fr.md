@@ -62,6 +62,18 @@ Une intégration personnalisée asynchrone pour le **modem DSL ZTE H186**. Lit l
 
 ---
 
+## 🗺️ Feuille de route et idées
+
+Prévu et à l'étude — **mettez un 👍 sur ce qui compte pour vous** et proposez vos idées :
+
+- 🔜 Diagnostic sans l'adresse du modem dans les messages d'erreur
+- 💡 Vérification statique des types (mypy) dans la CI
+- 💡 Notification de réparation lorsque le modem est injoignable
+
+➡️ Toutes les idées et le vote: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**
+
+---
+
 ## 📄 Licence
 
 Ce projet est sous licence MIT – voir [LICENSE](LICENSE).  
@@ -73,13 +85,15 @@ Copyright (C) 2026 Daniel Ebenhöh.
 
 <div align="center">
 
-**Je développe et maintiens cette intégration sur mon temps libre – et j'en assume seul les frais.**
+**Je développe et maintiens cette intégration sur mon temps libre et je prends en charge les frais de fonctionnement — mon temps, l'électricité ainsi que les outils de développement et le matériel informatique que j'utilise — de ma poche.**
 
-Si elle vous fait gagner du temps ou vous évite des soucis, un petit don volontaire garde le projet en vie et motive de nouvelles fonctionnalités.
-Chaque contribution, même modeste, me fait très plaisir. Merci ! 🙏
+Si elle vous fait gagner du temps ou vous évite des soucis, un petit don volontaire aide à faire vivre le projet. Chaque contribution, même modeste, est très appréciée. Merci ! 🙏
 
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
-  <img src="https://img.shields.io/badge/Offrez%20moi%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Faire un don via PayPal" height="42">
+  <img src="https://img.shields.io/badge/Offrez-moi%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Faire un don via PayPal" height="42">
+</a>
+<a href="https://buymeacoffee.com/daneben">
+  <img src="https://img.shields.io/badge/%E2%98%95%20Offrez-moi%20un%20caf%C3%A9-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
 </a>
 
 </div>

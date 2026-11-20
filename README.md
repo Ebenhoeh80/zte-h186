@@ -215,6 +215,18 @@ To contribute additional translations, please see [CONTRIBUTING.md](CONTRIBUTING
 
 ---
 
+## 🗺️ Roadmap & ideas
+
+Planned and under consideration — **give a 👍 to what matters to you**, and bring your own ideas:
+
+- 🔜 Diagnostics without the modem address in error messages
+- 💡 Static type checking (mypy) in CI
+- 💡 Repair notice when the modem is unreachable
+
+➡️ All ideas & voting: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License – see [LICENSE](LICENSE).  
@@ -226,13 +238,15 @@ Copyright (C) 2026 Daniel Ebenhöh.
 
 <div align="center">
 
-**I build and maintain this integration in my free time — and cover the running costs out of my own pocket.**
+**I build and maintain this integration in my free time, and cover the running costs — my time, electricity, and the development tools and IT equipment I use — out of my own pocket.**
 
-If it saves you time or trouble, a small voluntary tip keeps the project alive and motivates new features.
-Every contribution, however small, is hugely appreciated. Thank you! 🙏
+If it saves you time or trouble, a small voluntary tip helps keep the project going. Every contribution, however small, is hugely appreciated. Thank you! 🙏
 
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
   <img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal" height="42">
+</a>
+<a href="https://buymeacoffee.com/daneben">
+  <img src="https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
 </a>
 
 </div>
