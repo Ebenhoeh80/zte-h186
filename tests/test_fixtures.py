@@ -6,7 +6,9 @@ invented. See docs/PROTOCOL.md for how to add an answer captured from a real mod
 
 from __future__ import annotations
 
+import aiohttp
 import pytest
+from yarl import URL
 
 from custom_components.zte_h186.api import (
     ZteH186ApiClient,
@@ -14,7 +16,7 @@ from custom_components.zte_h186.api import (
     parse_dsl_values,
 )
 
-from .fake_http import FIXTURES, fake_modem, fixture
+from .fake_http import FIXTURES, FakeResponse, fake_modem, fixture
 
 
 def _client(session) -> ZteH186ApiClient:
@@ -115,3 +117,15 @@ async def test_client_rejects_a_session_timeout_that_does_not_go_away() -> None:
     session = fake_modem(fixture("session_timeout.xml"))
     with pytest.raises(ZteH186ProtocolError):
         await _client(session).async_get_device_info()
+
+
+async def test_the_sid_is_taken_from_the_cookie_jar_when_the_header_is_missing() -> None:
+    """The fallback to the session's cookie jar works (it needs a URL object, not a string)."""
+    session = fake_modem(fixture("dsl_up.xml"))
+    session.post.return_value = FakeResponse("")  # no Set-Cookie header, no cookie on the response
+    jar = aiohttp.CookieJar(unsafe=True)
+    jar.update_cookies({"SID": "jarsid"}, URL("http://192.168.10.2"))
+    session.cookie_jar = jar
+    client = _client(session)
+    await client.async_login()
+    assert client._sid == "jarsid"

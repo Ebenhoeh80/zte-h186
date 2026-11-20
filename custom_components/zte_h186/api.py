@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 
 import aiohttp
+from yarl import URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -480,7 +481,7 @@ class ZteH186ApiClient:
         # Fallback check from session cookie jar
         if not self._sid:
             try:
-                cookies = session.cookie_jar.filter_cookies(self._base_url)
+                cookies = session.cookie_jar.filter_cookies(URL(self._base_url))
                 if "SID" in cookies and cookies["SID"].value:
                     self._sid = cookies["SID"].value
             except (AttributeError, KeyError, TypeError, ValueError) as err:

@@ -214,7 +214,8 @@ def _async_get_entry_device(
     """
     lookup = getattr(dev_reg, "async_get_device_by_identifier", None)
     if lookup is not None:
-        return lookup(identifier, entry.entry_id)
+        device: dr.DeviceEntry | None = lookup(identifier, entry.entry_id)
+        return device
     return dev_reg.async_get_device(identifiers={identifier})
 
 

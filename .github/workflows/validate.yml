@@ -65,6 +65,8 @@ jobs:
           python-version: "3.13"
       - name: Install test dependencies
         run: pip install -r requirements_test.txt
+      - name: Type check (mypy)
+        run: mypy custom_components
       - name: Check version consistency
         run: python scripts/check_versions.py
       - name: Run tests with coverage
