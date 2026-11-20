@@ -51,11 +51,11 @@ rules:
   devices: done
   diagnostics: done
   discovery-update-info:
-    status: exempt
-    comment: No network discovery; the modem is reached by a user-provided management IP.
+    status: done
+    comment: A DHCP discovery whose hardware address matches the one stored in the entry saves the modem's new address; the entry is reloaded.
   discovery:
-    status: exempt
-    comment: The H186 exposes no reliable zeroconf/SSDP/DHCP signature to key on; setup is manual by design.
+    status: done
+    comment: DHCP discovery by the hardware address prefix; the login page must identify the device as an H186 before it is offered.
   docs-data-update: done
   docs-examples: done
   docs-known-limitations: done

@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name}",
     "step": {
       "user": {
         "title": "ZTE H186 Modem verbinden",
@@ -41,7 +42,9 @@
     "abort": {
       "already_configured": "Dieses ZTE H186 Modem ist bereits konfiguriert.",
       "reconfigure_successful": "Die Neukonfiguration war erfolgreich.",
-      "reauth_successful": "Die erneute Authentifizierung war erfolgreich."
+      "reauth_successful": "Die erneute Authentifizierung war erfolgreich.",
+      "wrong_device": "Das ist nicht das eingerichtete Modem. Adresse prüfen, oder den Eintrag entfernen und das Modem neu hinzufügen.",
+      "not_supported": "Das Gerät hat sich nicht als ZTE-H186-Modem gemeldet."
     }
   },
   "options": {
@@ -115,6 +118,12 @@
     },
     "protocol_error": {
       "message": "Das ZTE H186 Modem hat eine unerwartete Antwort geliefert: {error}"
+    },
+    "wrong_modem": {
+      "message": "Unter der gespeicherten Adresse antwortet ein anderes Modem (Seriennummer endet auf {found}, erwartet {expected}). Seine Daten werden nicht in diesen Eintrag gemischt. Adresse prüfen oder den Eintrag neu konfigurieren."
+    },
+    "duplicate_modem": {
+      "message": "Dieses Modem wird bereits vom Eintrag „{title}“ verwaltet. Bitte diesen doppelten Eintrag entfernen."
     }
   }
 }

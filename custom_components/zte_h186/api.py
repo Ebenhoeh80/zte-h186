@@ -18,6 +18,35 @@ _LOGGER = logging.getLogger(__name__)
 # ZTE H186 web-UI endpoints (relative to the modem base URL)
 DSL_STATUS_PATH = "/getpage.lua?pid=1002&nextpage=Internet_AdminInternetStatus_DSL_t.lp"
 DSL_XML_PATH = "/common_page/internet_dsl_interface_lua.lua"
+# Device information (serial number, MAC address, versions). The modem only answers this request
+# after the status page was requested in the same session.
+STATUS_PAGE_PATH = "/getpage.lua?pid=1002&nextpage=ManagDiag_StatusManag_t.lp"
+DEVICE_INFO_PATH = "/common_page/ManagReg_lua.lua"
+_SERIAL_PATTERN = re.compile(r"^[A-Za-z0-9]{6,32}$")
+
+
+def _decode_references(text: str) -> str:
+    """Decode the numeric character references (``&#72;``) the login page writes its title in.
+
+    A value that is not a character (a device that is not an H186 may send anything) is kept as
+    it is.
+    """
+
+    def _char(match: re.Match[str]) -> str:
+        try:
+            return chr(int(match.group(1)))
+        except (ValueError, OverflowError):
+            return match.group(0)
+
+    return re.sub(r"&#(\d{1,7});", _char, text)
+
+
+def _normalise_mac(value: str | None) -> str | None:
+    """Return the hardware address in the form Home Assistant uses (``aa:bb:cc:dd:ee:ff``)."""
+    digits = re.sub(r"[^0-9A-Fa-f]", "", value or "")
+    if len(digits) != 12:
+        return None
+    return ":".join(digits[i : i + 2] for i in range(0, 12, 2)).lower()
 
 
 class ZteH186Error(Exception):
@@ -34,6 +63,19 @@ class ZteH186AuthError(ZteH186Error):
 
 class ZteH186ProtocolError(ZteH186Error):
     """Unexpected protocol response from modem."""
+
+
+@dataclass(slots=True, frozen=True)
+class ZteH186DeviceInfo:
+    """What identifies the physical modem, as reported by the modem itself."""
+
+    serial_number: str
+    mac_address: str | None = None
+    model: str | None = None
+    hardware_version: str | None = None
+    software_version: str | None = None
+    boot_version: str | None = None
+    dsl_version: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -130,9 +172,43 @@ class ZteH186ApiClient:
         return self._session
 
     async def close(self) -> None:
-        """Close client session if internally created."""
+        """Log out of the modem and close the client session if internally created.
+
+        The modem allows one admin session at a time. A session that is not logged out stays
+        occupied
+        until it times out, and the next login (after a reload, a restart or a dialog) is refused.
+        """
+        await self.async_logout()
         if not self._custom_session and self._session and not self._session.closed:
             await self._session.close()
+
+    async def async_logout(self) -> None:
+        """Log out of the modem so that its single admin session is free again (best effort)."""
+        async with self._lock:
+            await self._async_logout_internal()
+
+    async def _async_logout_internal(self) -> None:
+        """Send the web UI's log-off request (must hold self._lock)."""
+        session, sid = self._session, self._sid
+        self._is_authenticated = False
+        self._sid = None
+        if session is None or session.closed or not sid:
+            return
+        try:
+            async with asyncio.timeout(5):
+                async with session.post(
+                    f"{self._base_url}/",
+                    data={"IF_LogOff": "1", "IF_LanguageSwitch": ""},
+                    headers={
+                        "Cookie": f"SID={sid}; _TESTCOOKIESUPPORT=1",
+                        "Referer": f"{self._base_url}/",
+                    },
+                ) as resp:
+                    await resp.read()
+        except (TimeoutError, aiohttp.ClientError) as err:
+            _LOGGER.debug(
+                "Log-off from the modem failed (%s); the session times out by itself", err
+            )
 
     @staticmethod
     def _decode_session_token(html_text: str) -> str:
@@ -316,6 +392,86 @@ class ZteH186ApiClient:
         async with self._lock:
             session = await self._get_session()
             await self._async_login_internal(session)
+
+    async def async_get_device_info(self) -> ZteH186DeviceInfo:
+        """Read the identity of the modem: serial number, MAC address, model and versions."""
+        async with self._lock:
+            session = await self._get_session()
+            if not self._is_authenticated or not self._sid:
+                await self._async_login_internal(session)
+
+            response_text = await self._async_fetch_device_info_xml(session)
+            if response_text is None:
+                _LOGGER.debug("Session expired, re-authenticating to read the device information")
+                self._is_authenticated = False
+                self._sid = None
+                await self._async_login_internal(session)
+                response_text = await self._async_fetch_device_info_xml(session)
+            if response_text is None:
+                raise ZteH186ProtocolError("The modem did not return its device information.")
+
+            values = self._extract_xml_values(response_text)
+            error = values.get("IF_ERRORSTR", "")
+            if error not in ("", "SUCC"):
+                raise ZteH186ProtocolError(f"Modem returned error: {error}")
+            serial = values.get("SerialNumber", "").strip()
+            if not _SERIAL_PATTERN.match(serial):
+                raise ZteH186ProtocolError("The modem did not report a usable serial number.")
+            return ZteH186DeviceInfo(
+                serial_number=serial,
+                mac_address=_normalise_mac(values.get("MACAddress")),
+                model=values.get("ModelName") or None,
+                hardware_version=values.get("HardwareVer") or None,
+                software_version=values.get("SoftwareVer") or None,
+                boot_version=values.get("BootVer") or None,
+                dsl_version=values.get("ModelFirmwareVer") or None,
+            )
+
+    async def _async_fetch_device_info_xml(self, session: aiohttp.ClientSession) -> str | None:
+        """Request the status page and then the device data; ``None`` if the session has expired."""
+        status_url = f"{self._base_url}{STATUS_PAGE_PATH}"
+        cookie = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
+        endpoint = f"{self._base_url}{DEVICE_INFO_PATH}?_={int(time.time() * 1000)}"
+        try:
+            async with session.get(status_url, headers={"Cookie": cookie}) as page:
+                await page.read()
+            async with session.get(
+                endpoint,
+                headers={
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Accept": "application/xml, text/xml, */*; q=0.01",
+                    "Referer": status_url,
+                    "Cookie": cookie,
+                },
+            ) as resp:
+                text = await resp.text(encoding="latin-1", errors="replace")
+                if resp.status != 200 or "SessionTimeout" in text:
+                    return None
+                return text
+        except (TimeoutError, aiohttp.ClientError) as err:
+            raise ZteH186ConnectionError(
+                f"Unable to reach modem at {self._base_url}: {err}"
+            ) from err
+
+    @staticmethod
+    async def async_probe_model(host: str, session: aiohttp.ClientSession) -> str | None:
+        """Return the model title of the login page (no login), for example "H186"; ``None`` if
+        unreachable."""
+        try:
+            async with asyncio.timeout(5):
+                async with session.get(
+                    ZteH186ApiClient._format_base_url(host) + "/", allow_redirects=False
+                ) as resp:
+                    if resp.status != 200:
+                        return None
+                    text = await resp.text(encoding="latin-1", errors="replace")
+        except (TimeoutError, aiohttp.ClientError):
+            return None
+        match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+        if not match:
+            return None
+        # The page writes the title as HTML character references (&#72;&#49;...).
+        return _decode_references(match.group(1)).strip() or None
 
     async def async_get_dsl_stats(self) -> ZteH186Data:
         """Fetch and parse current DSL statistics from the modem."""

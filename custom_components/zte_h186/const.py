@@ -11,6 +11,12 @@ CONF_HOST: Final = "host"
 CONF_USERNAME: Final = "username"
 CONF_PASSWORD: Final = "password"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
+# Identity of the physical modem, read from the modem itself (see docs/IDENTITY.md).
+CONF_SERIAL: Final = "serial_number"
+CONF_MAC: Final = "mac_address"
+# Version 1.2 of an entry is identified by the modem's serial number (earlier: by its address).
+CONFIG_ENTRY_MINOR_VERSION: Final = 2
+TITLE_PREFIX: Final = "ZTE H186"
 
 # Defaults
 DEFAULT_USERNAME: Final = "admin"

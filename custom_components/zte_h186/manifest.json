@@ -5,12 +5,13 @@
     "@Ebenhoeh80"
   ],
   "config_flow": true,
+  "dhcp": [{ "macaddress": "DCF8B9*" }],
   "documentation": "https://github.com/Ebenhoeh80/zte-h186",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Ebenhoeh80/zte-h186/issues",
   "quality_scale": "gold",
   "requirements": [],
-  "version": "1.4.1"
+  "version": "1.5.0"
 }
 

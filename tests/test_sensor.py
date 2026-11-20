@@ -13,6 +13,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.zte_h186.const import DOMAIN, DSL_STATUS_OPTIONS
 from custom_components.zte_h186.sensor import _normalize_dsl_status
 
+from .conftest import SERIAL
+
 
 @pytest.mark.parametrize(
     ("raw", "expected"),
@@ -40,7 +42,7 @@ def _state_getter(hass: HomeAssistant, entry: MockConfigEntry) -> Callable[[str,
     ent_reg = er.async_get(hass)
 
     def get(platform: str, suffix: str) -> str | None:
-        entity_id = ent_reg.async_get_entity_id(platform, DOMAIN, f"{entry.entry_id}_{suffix}")
+        entity_id = ent_reg.async_get_entity_id(platform, DOMAIN, f"{SERIAL}_{suffix}")
         assert entity_id is not None, f"entity for {suffix} not found"
         state = hass.states.get(entity_id)
         assert state is not None
