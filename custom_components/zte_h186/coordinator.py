@@ -23,6 +23,9 @@ from .const import CONF_HOST, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+# A running integration asks for credentials only after this many refused logins in a row.
+AUTH_FAILURES_BEFORE_REAUTH = 2
+
 type ZteH186ConfigEntry = ConfigEntry[ZteH186DataUpdateCoordinator]
 
 
@@ -42,6 +45,8 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
         self.config_entry = config_entry
         # What the modem reports about itself; read once per setup (``None`` while unknown).
         self.device_info: ZteH186DeviceInfo | None = None
+        # Rejected logins in a row while running (see ``_async_update_data``).
+        self._auth_failures = 0
 
         scan_interval = config_entry.options.get(
             CONF_SCAN_INTERVAL,
@@ -60,8 +65,18 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
         host = self.config_entry.data[CONF_HOST]
         try:
             async with asyncio.timeout(30):
-                return await self.client.async_get_dsl_stats()
+                data = await self.client.async_get_dsl_stats()
         except ZteH186AuthError as err:
+            self._auth_failures += 1
+            if self.data is not None and self._auth_failures < AUTH_FAILURES_BEFORE_REAUTH:
+                # The modem allows one admin session; a login that is refused while it works is
+                # usually that session being busy (web interface open), not a changed password.
+                # Retry at the next poll instead of asking the user for credentials.
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="auth_retry",
+                    translation_placeholders={"host": host},
+                ) from err
             # Triggers Home Assistant's reauth flow instead of retrying forever.
             raise ConfigEntryAuthFailed(
                 translation_domain=DOMAIN,
@@ -69,20 +84,25 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
                 translation_placeholders={"host": host},
             ) from err
         except TimeoutError as err:
+            self._auth_failures = 0
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_timeout",
                 translation_placeholders={"host": host},
             ) from err
         except ZteH186ConnectionError as err:
+            self._auth_failures = 0
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="cannot_connect",
                 translation_placeholders={"host": host},
             ) from err
         except ZteH186Error as err:
+            self._auth_failures = 0
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="protocol_error",
                 translation_placeholders={"error": str(err)},
             ) from err
+        self._auth_failures = 0
+        return data

@@ -110,6 +110,9 @@
     "auth_failed": {
       "message": "El módem ZTE H186 en {host} rechazó las credenciales guardadas. Vuelva a autenticarse."
     },
+    "auth_retry": {
+      "message": "El módem ZTE H186 en {host} rechazó el inicio de sesión. Puede que su única sesión de administrador esté ocupada (por ejemplo, por la interfaz web). Se vuelve a intentar; las credenciales solo se piden de nuevo si sigue fallando."
+    },
     "cannot_connect": {
       "message": "No se pudo conectar con el módem ZTE H186 en {host}. Compruebe que sea accesible."
     },

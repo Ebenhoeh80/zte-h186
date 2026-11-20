@@ -110,6 +110,9 @@
     "auth_failed": {
       "message": "The ZTE H186 modem at {host} rejected the stored credentials. Please re-authenticate."
     },
+    "auth_retry": {
+      "message": "The ZTE H186 modem at {host} refused the login. Its single admin session may be in use (for example by the web interface). The login is retried; the credentials are only asked for again if it keeps failing."
+    },
     "cannot_connect": {
       "message": "Could not connect to the ZTE H186 modem at {host}. Check that it is reachable."
     },
