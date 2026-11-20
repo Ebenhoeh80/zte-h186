@@ -79,7 +79,11 @@ async def test_diagnostics_whole_output_has_no_identifiers(
     for leak in (*LEAKS, "192.168.10.2", mock_config_entry.title):
         assert leak.lower() not in text.lower(), leak
     # what is useful stays
-    assert diag["data"]["raw_values"] == {"Status": "Up", "Downstream_current_rate": "116798"}
+    assert diag["data"]["raw_values"] == {
+        "IF_ERRORSTR": "SUCC",
+        "Status": "Up",
+        "Downstream_current_rate": "116798",
+    }
     assert set(diag["data"]["raw_other_keys"]) == {
         "MACAddress",
         "ParaName",
