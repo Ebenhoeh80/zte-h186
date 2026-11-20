@@ -10,6 +10,7 @@ import logging
 import re
 import time
 from typing import Any, Final, Literal
+from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 
 import aiohttp
@@ -24,6 +25,67 @@ DSL_XML_PATH = "/common_page/internet_dsl_interface_lua.lua"
 STATUS_PAGE_PATH = "/getpage.lua?pid=1002&nextpage=ManagDiag_StatusManag_t.lp"
 DEVICE_INFO_PATH = "/common_page/ManagReg_lua.lua"
 _SERIAL_PATTERN = re.compile(r"^[A-Za-z0-9]{6,32}$")
+
+# The most the integration reads of one answer. The modem is a small embedded device on the LAN; an
+# answer that is larger is not the modem's web interface (or is broken) and is refused instead of
+# being held in memory.
+MAX_PAGE_BYTES = 512 * 1024  # login page, status page
+MAX_TOKEN_BYTES = 4 * 1024  # the numeric login token
+MAX_XML_BYTES = 256 * 1024  # the XML answers (DSL values, device information)
+_CHUNK_BYTES = 16 * 1024
+
+_HOSTNAME = re.compile(
+    r"^(?=.{1,253}$)[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?"
+    r"(\.[A-Za-z0-9_]([A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?)*$"
+)
+
+
+def validate_host(value: str) -> str:
+    """Return the address as entered if it is a usable modem address, else raise ``ValueError``.
+
+    Accepted: an IPv4 or IPv6 address, a host name, each with an optional port (``host:80``,
+    ``[::1]:80``), and the same with a leading ``http://`` or ``https://`` (and a trailing ``/``).
+    Everything else (other schemes, a path, a query, credentials in the address, spaces) is refused.
+    """
+    text = value.strip()
+    if not text:
+        raise ValueError("empty address")
+    try:
+        ipaddress.ip_address(text)  # a bare IPv6 address has colons but no port
+    except ValueError:
+        pass
+    else:
+        return text
+    if "://" in text and not text.lower().startswith(("http://", "https://")):
+        raise ValueError("only http:// and https:// are allowed")
+    parts = urlsplit(text if "://" in text else f"//{text}")
+    if parts.path not in ("", "/") or parts.query or parts.fragment or "@" in parts.netloc:
+        raise ValueError("the address must not contain a path, query or credentials")
+    host = parts.hostname  # raises ValueError for a malformed [v6] address
+    _ = parts.port  # raises ValueError for a port that is not a number in 0-65535
+    if not host:
+        raise ValueError("no host in the address")
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        if not _HOSTNAME.match(host):
+            raise ValueError("not a valid host name") from None
+    return text.rstrip("/")
+
+
+async def _read_text(resp: aiohttp.ClientResponse, limit: int) -> str:
+    """Read the body of a response (at most ``limit`` bytes) and decode it as Latin-1.
+
+    Raises ``ZteH186ProtocolError`` if the body is larger.
+    """
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in resp.content.iter_chunked(_CHUNK_BYTES):
+        size += len(chunk)
+        if size > limit:
+            raise ZteH186ProtocolError(f"The modem's answer is larger than {limit} bytes.")
+        chunks.append(chunk)
+    return b"".join(chunks).decode("latin-1", errors="replace")
 
 
 def _decode_references(text: str) -> str:
@@ -281,8 +343,8 @@ class ZteH186ApiClient:
                         "Referer": f"{self._base_url}/",
                     },
                 ) as resp:
-                    await resp.read()
-        except (TimeoutError, aiohttp.ClientError) as err:
+                    await _read_text(resp, MAX_PAGE_BYTES)
+        except (TimeoutError, aiohttp.ClientError, ZteH186ProtocolError) as err:
             _LOGGER.debug(
                 "Log-off from the modem failed (%s); the session times out by itself", err
             )
@@ -354,7 +416,7 @@ class ZteH186ApiClient:
             async with session.get(root_url) as resp:
                 if resp.status != 200:
                     raise ZteH186ConnectionError(f"Login page returned HTTP {resp.status}")
-                login_page_text = await resp.text(encoding="latin-1", errors="replace")
+                login_page_text = await _read_text(resp, MAX_PAGE_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(
                 f"Unable to reach modem at {self._base_url}: {err}"
@@ -368,7 +430,7 @@ class ZteH186ApiClient:
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
         try:
             async with session.get(token_url, headers={"Referer": root_url}) as resp:
-                token_resp = await resp.text(encoding="latin-1", errors="replace")
+                token_resp = await _read_text(resp, MAX_TOKEN_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(f"Failed to fetch login token: {err}") from err
 
@@ -438,7 +500,7 @@ class ZteH186ApiClient:
         }
         try:
             async with session.get(status_url, headers=status_headers) as resp:
-                status_page_html = await resp.text(encoding="latin-1", errors="replace")
+                status_page_html = await _read_text(resp, MAX_PAGE_BYTES)
                 authorized = (
                     resp.status == 200 and "internet_dsl_interface_lua.lua" in status_page_html
                 )
@@ -511,7 +573,7 @@ class ZteH186ApiClient:
         endpoint = f"{self._base_url}{DEVICE_INFO_PATH}?_={int(time.time() * 1000)}"
         try:
             async with session.get(status_url, headers={"Cookie": cookie}) as page:
-                await page.read()
+                await _read_text(page, MAX_PAGE_BYTES)
             async with session.get(
                 endpoint,
                 headers={
@@ -521,7 +583,7 @@ class ZteH186ApiClient:
                     "Cookie": cookie,
                 },
             ) as resp:
-                text = await resp.text(encoding="latin-1", errors="replace")
+                text = await _read_text(resp, MAX_XML_BYTES)
                 if resp.status != 200 or "SessionTimeout" in text:
                     return None
                 return text
@@ -541,8 +603,8 @@ class ZteH186ApiClient:
                 ) as resp:
                     if resp.status != 200:
                         return None
-                    text = await resp.text(encoding="latin-1", errors="replace")
-        except (TimeoutError, aiohttp.ClientError):
+                    text = await _read_text(resp, MAX_PAGE_BYTES)
+        except (TimeoutError, aiohttp.ClientError, ZteH186ProtocolError):
             return None
         match = re.search(r"<title>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
         if not match:
@@ -571,7 +633,7 @@ class ZteH186ApiClient:
 
             try:
                 async with session.get(endpoint, headers=headers) as resp:
-                    response_text = await resp.text(encoding="latin-1", errors="replace")
+                    response_text = await _read_text(resp, MAX_XML_BYTES)
                     if resp.status != 200 or "SessionTimeout" in response_text:
                         _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
                         self._is_authenticated = False
@@ -579,9 +641,7 @@ class ZteH186ApiClient:
                         await self._async_login_internal(session)
                         headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
                         async with session.get(endpoint, headers=headers) as retry_resp:
-                            response_text = await retry_resp.text(
-                                encoding="latin-1", errors="replace"
-                            )
+                            response_text = await _read_text(retry_resp, MAX_XML_BYTES)
                             if retry_resp.status != 200:
                                 raise ZteH186ProtocolError(
                                     f"DSL endpoint returned HTTP {retry_resp.status} "

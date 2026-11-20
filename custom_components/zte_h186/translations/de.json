@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Verbindung zum Modem fehlgeschlagen. Bitte IP-Adresse und Erreichbarkeit prüfen.",
+      "invalid_host": "Bitte eine IP-Adresse oder einen Hostnamen eingeben, optional mit Port oder vorangestelltem http:// bzw. https:// (kein Pfad).",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
       "unknown": "Unerwarteter Fehler bei der Kommunikation aufgetreten."
     },

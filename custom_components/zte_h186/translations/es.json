@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Error al conectar con el módem. Verifique la dirección IP y la accesibilidad de red.",
+      "invalid_host": "Introduzca una dirección IP o un nombre de host, opcionalmente con puerto o con http:// o https:// al principio (sin ruta).",
       "invalid_auth": "Nombre de usuario o contraseña no válidos.",
       "unknown": "Ocurrió un error inesperado durante la comunicación."
     },

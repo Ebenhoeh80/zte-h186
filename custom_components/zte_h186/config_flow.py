@@ -30,6 +30,7 @@ from .api import (
     ZteH186ConnectionError,
     ZteH186DeviceInfo,
     ZteH186Error,
+    validate_host,
 )
 from .const import (
     CONF_HOST,
@@ -83,6 +84,11 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         errors: dict[str, str] = {}
         info: ZteH186DeviceInfo | None = None
+        try:
+            validate_host(user_input[CONF_HOST])
+        except ValueError:
+            # Nothing is sent to a value that is not an address; no running session is released.
+            return {CONF_HOST: "invalid_host"}, None
         for running in release_entries or []:
             if running.state is ConfigEntryState.LOADED:
                 await running.runtime_data.client.async_logout()

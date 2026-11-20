@@ -18,6 +18,8 @@ from custom_components.zte_h186.api import (
     ZteH186ProtocolError,
 )
 
+from .fake_http import FakeContent
+
 SAMPLE_LOGIN_HTML = """
 <!DOCTYPE html>
 <html>
@@ -233,6 +235,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data="", headers=None, cookies=None):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = headers or {}
                 self.cookies = cookies or {}
 
@@ -288,6 +291,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = MagicMock(getall=MagicMock(return_value=[]))
                 self.cookies = {}
 
@@ -329,6 +333,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.headers = MagicMock(getall=MagicMock(return_value=["SID=test_sid"]))
                 self.cookies = {"SID": MagicMock(value="test_sid")}
 
@@ -370,6 +375,7 @@ class TestAsyncMockFlow(unittest.IsolatedAsyncioTestCase):
             def __init__(self, status=200, text_data="", label=""):
                 self.status = status
                 self._text = text_data
+                self.content = FakeContent(text_data)
                 self.label = label
                 self.headers = MagicMock(getall=MagicMock(return_value=["SID=locked_sid"]))
                 self.cookies = {"SID": MagicMock(value="locked_sid")}
@@ -419,6 +425,7 @@ class _Resp:
     def __init__(self, status=200, text_data="", sid=None):
         self.status = status
         self._text = text_data
+        self.content = FakeContent(text_data)
         self.headers = MagicMock(
             getall=MagicMock(return_value=[f"SID={sid}; path=/"] if sid else [])
         )

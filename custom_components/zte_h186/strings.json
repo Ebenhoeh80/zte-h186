@@ -36,6 +36,7 @@
     },
     "error": {
       "cannot_connect": "Failed to connect to the modem. Verify the IP address and network reachability.",
+      "invalid_host": "Enter an IP address or host name, optionally with a port or a leading http:// or https:// (no path).",
       "invalid_auth": "Invalid username or password.",
       "unknown": "Unexpected error occurred during communication."
     },

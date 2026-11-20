@@ -165,3 +165,28 @@ async def test_options_flow(
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert mock_config_entry.options[CONF_SCAN_INTERVAL] == 120
+
+
+@pytest.mark.parametrize("host", ["http://192.168.10.2/admin", "ftp://modem", "mo dem", ""])
+async def test_user_flow_rejects_an_invalid_host(hass: HomeAssistant, mock_client, host) -> None:
+    """A value that is not an address is refused before anything is sent to it."""
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, CONF_HOST: host}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_HOST: "invalid_host"}
+    mock_client.async_login.assert_not_awaited()
+
+
+async def test_reconfigure_rejects_an_invalid_host(
+    hass: HomeAssistant, mock_client, mock_config_entry: MockConfigEntry
+) -> None:
+    """The reconfigure form validates the address as well."""
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**USER_INPUT, CONF_HOST: "http://modem/x"}
+    )
+    assert result["errors"] == {CONF_HOST: "invalid_host"}
+    mock_client.async_login.assert_not_awaited()

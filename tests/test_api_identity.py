@@ -13,6 +13,8 @@ from custom_components.zte_h186.api import (
     ZteH186ProtocolError,
 )
 
+from .fake_http import FakeContent
+
 INFO_XML = """<ajax_response_xml_root>
 <IF_ERRORSTR>SUCC</IF_ERRORSTR>
 <ModelName>H186</ModelName>
@@ -34,6 +36,7 @@ class Resp:
     def __init__(self, status: int = 200, text: str = "") -> None:
         self.status = status
         self._text = text
+        self.content = FakeContent(text)
 
     async def __aenter__(self) -> Resp:
         return self
