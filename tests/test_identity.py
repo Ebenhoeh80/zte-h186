@@ -36,7 +36,7 @@ from .conftest import MAC, SERIAL
 
 HOST = "192.168.10.2"
 NEW_HOST = "192.168.10.77"
-TITLE = f"ZTE H186 {SERIAL}"
+TITLE = f"ZTE H186 ({SERIAL})"
 OTHER_SERIAL = "ZTE9999999999Z99"
 
 
@@ -590,3 +590,14 @@ async def test_the_older_of_two_copies_is_kept_after_a_downgrade(
     assert (
         ent_reg.async_get_entity_id(original.domain, DOMAIN, f"{entry.entry_id}_{suffix}") is None
     )
+
+
+async def test_a_generated_title_of_an_older_form_is_brought_to_the_current_one(
+    hass: HomeAssistant, mock_client
+) -> None:
+    entry = _modern()
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(entry, title=f"ZTE H186 {SERIAL}")
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.title == TITLE
