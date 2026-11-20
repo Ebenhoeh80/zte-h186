@@ -127,7 +127,7 @@ It is likely to work on other ZTE DSL modems that use the same `getpage.lua` / `
 
 The integration uses **local polling**. A `DataUpdateCoordinator` fetches all line statistics in a single authenticated request on a fixed interval (default **60 s**, configurable 15–600 s via the options flow). The authenticated session is cached and automatically re-established after a modem-side session timeout, so each poll is a single lightweight request. The **Refresh DSL Stats Now** button triggers an immediate poll on demand.
 
-If a poll fails, entities become `unavailable` and the failure is logged once; an authentication failure starts the Home Assistant re-authentication flow instead of retrying endlessly.
+If a poll fails, entities become `unavailable` and the failure is logged once; a refused login is retried once at the next poll (the modem allows only one admin session, so a busy session is the usual cause); only two refused logins in a row start the Home Assistant re-authentication flow instead of retrying endlessly.
 
 ## 💡 Use Cases & Automation Examples
 
@@ -219,8 +219,6 @@ To contribute additional translations, please see [CONTRIBUTING.md](CONTRIBUTING
 
 Planned and under consideration — **give a 👍 to what matters to you**, and bring your own ideas:
 
-- 🔜 Diagnostics without the modem address in error messages
-- 💡 Static type checking (mypy) in CI
 - 💡 Repair notice when the modem is unreachable
 
 ➡️ All ideas & voting: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**

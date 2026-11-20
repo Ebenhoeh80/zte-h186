@@ -1,6 +1,6 @@
 [project]
 name = "zte-h186-dsl-statistics"
-version = "1.5.1"
+version = "1.6.0"
 description = "Read DSL line statistics from a ZTE H186 modem"
 readme = "README.md"
 requires-python = ">=3.13"
