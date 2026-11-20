@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import (
     ConfigEntry,
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
@@ -20,19 +23,27 @@ from .api import (
     ZteH186ApiClient,
     ZteH186AuthError,
     ZteH186ConnectionError,
+    ZteH186DeviceInfo,
     ZteH186Error,
 )
 from .const import (
     CONF_HOST,
+    CONF_MAC,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    CONF_SERIAL,
     CONF_USERNAME,
+    CONFIG_ENTRY_MINOR_VERSION,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_USERNAME,
     DOMAIN,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
+from .identity import is_generated_title, modem_title
+
+if TYPE_CHECKING:
+    from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,10 +60,25 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for ZTE H186."""
 
     VERSION = 1
+    MINOR_VERSION = CONFIG_ENTRY_MINOR_VERSION
 
-    async def _async_validate_input(self, user_input: dict[str, Any]) -> dict[str, str]:
-        """Validate the user input by connecting to the modem."""
+    def __init__(self) -> None:
+        """Initialize the flow."""
+        self._discovered_host: str | None = None
+
+    async def _async_validate_input(
+        self, user_input: Mapping[str, Any], *, release_entry: ConfigEntry | None = None
+    ) -> tuple[dict[str, str], ZteH186DeviceInfo | None]:
+        """Connect to the modem and return the errors, and what the modem says about itself.
+
+        The modem allows one admin session at a time. If the entry that is being changed is running,
+        its session is logged out first; it logs in again by itself at the next poll.
+        """
         errors: dict[str, str] = {}
+        info: ZteH186DeviceInfo | None = None
+        if release_entry is not None and release_entry.state is ConfigEntryState.LOADED:
+            await release_entry.runtime_data.client.async_logout()
+
         client = ZteH186ApiClient(
             host=user_input[CONF_HOST],
             username=user_input.get(CONF_USERNAME, DEFAULT_USERNAME),
@@ -62,6 +88,7 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             await client.async_login()
             await client.async_get_dsl_stats()
+            info = await client.async_get_device_info()
         except ZteH186AuthError:
             errors["base"] = "invalid_auth"
         except ZteH186ConnectionError:
@@ -75,7 +102,14 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         finally:
             await client.close()
 
-        return errors
+        return errors, info
+
+    def _entry_at_address(self, host: str) -> ConfigEntry | None:
+        """Return the entry that manages the modem at this address, if there is one."""
+        for entry in self._async_current_entries(include_ignore=False):
+            if entry.data.get(CONF_HOST, "").lower() == host.lower():
+                return entry
+        return None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
@@ -84,23 +118,39 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             host = user_input[CONF_HOST].strip()
             user_input[CONF_HOST] = host
-            # Prevent a second entry for the same modem without pinning the entry's
-            # unique_id to the IP (an IP is not a stable device identifier).
-            self._async_abort_entries_match({CONF_HOST: host})
+            # An entry from an older version that is not identified by its serial number yet is
+            # recognised by its address (no second entry, and no second login that competes for the
+            # modem's single session). For an entry that knows its serial number the comparison of
+            # the
+            # serial numbers decides; its running session is released for the check.
+            at_address = self._entry_at_address(host)
+            if at_address is not None and not at_address.data.get(CONF_SERIAL):
+                return self.async_abort(reason="already_configured")
 
-            errors = await self._async_validate_input(user_input)
+            errors, info = await self._async_validate_input(user_input, release_entry=at_address)
 
-            if not errors:
+            if not errors and info is not None:
+                # The modem is identified by its serial number, never by the address it was found
+                # at.
+                await self.async_set_unique_id(info.serial_number, raise_on_progress=False)
+                self._abort_if_unique_id_configured(updates={CONF_HOST: host})
                 return self.async_create_entry(
-                    title=f"ZTE H186 ({host})",
+                    title=modem_title(info.serial_number),
                     data={
                         CONF_HOST: host,
                         CONF_USERNAME: user_input.get(CONF_USERNAME, DEFAULT_USERNAME),
                         CONF_PASSWORD: user_input[CONF_PASSWORD],
+                        CONF_SERIAL: info.serial_number,
+                        **({CONF_MAC: info.mac_address} if info.mac_address else {}),
                     },
                 )
+            if not errors:
+                errors["base"] = "cannot_connect"
 
-        schema = self.add_suggested_values_to_schema(STEP_USER_DATA_SCHEMA, user_input or {})
+        suggested = dict(user_input or {})
+        if self._discovered_host and CONF_HOST not in suggested:
+            suggested[CONF_HOST] = self._discovered_host
+        schema = self.add_suggested_values_to_schema(STEP_USER_DATA_SCHEMA, suggested)
 
         return self.async_show_form(
             step_id="user",
@@ -108,23 +158,73 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_dhcp(self, discovery_info: DhcpServiceInfo) -> ConfigFlowResult:
+        """Handle a device whose hardware address matches (the modem asked for an address, or got a
+        new one).
+
+        A known modem (recognised by its stored hardware address) gets its new address saved.
+        An unknown
+        device is offered if its login page says it is an H186; the serial number is read after the
+        login.
+        """
+        host = discovery_info.ip
+        mac = dr.format_mac(discovery_info.macaddress)
+        for entry in self._async_current_entries(include_ignore=False):
+            if entry.data.get(CONF_MAC) == mac:
+                if entry.data.get(CONF_HOST) != host:
+                    self.hass.config_entries.async_update_entry(
+                        entry, data={**entry.data, CONF_HOST: host}
+                    )
+                    self.hass.config_entries.async_schedule_reload(entry.entry_id)
+                return self.async_abort(reason="already_configured")
+            if entry.data.get(CONF_HOST, "").lower() == host.lower():
+                return self.async_abort(reason="already_configured")
+
+        model = await ZteH186ApiClient.async_probe_model(host, async_get_clientsession(self.hass))
+        if model is None or "H186" not in model.upper():
+            return self.async_abort(reason="not_supported")
+
+        self._discovered_host = host
+        self.context["title_placeholders"] = {"name": f"ZTE H186 ({host})"}
+        return await self.async_step_user()
+
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle reconfiguration of an existing entry."""
+        """Handle reconfiguration of an existing entry (the address or the credentials)."""
         errors: dict[str, str] = {}
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
             user_input[CONF_HOST] = user_input[CONF_HOST].strip()
             combined_input = {**entry.data, **user_input}
-            errors = await self._async_validate_input(combined_input)
+            errors, info = await self._async_validate_input(combined_input, release_entry=entry)
 
-            if not errors:
+            if not errors and info is not None:
+                stored = entry.data.get(CONF_SERIAL)
+                if stored and stored != info.serial_number:
+                    # A different modem must not take over the entities of this one.
+                    return self.async_abort(reason="wrong_device")
+                other = self.hass.config_entries.async_entry_for_domain_unique_id(
+                    DOMAIN, info.serial_number
+                )
+                if other is not None and other.entry_id != entry.entry_id:
+                    return self.async_abort(reason="already_configured")
+                updates: dict[str, Any] = {
+                    **user_input,
+                    CONF_SERIAL: info.serial_number,
+                    **({CONF_MAC: info.mac_address} if info.mac_address else {}),
+                }
                 return self.async_update_reload_and_abort(
                     entry,
-                    data_updates=user_input,
+                    unique_id=info.serial_number,
+                    title=modem_title(info.serial_number)
+                    if is_generated_title(entry.title)
+                    else entry.title,
+                    data_updates=updates,
                 )
+            if not errors:
+                errors["base"] = "cannot_connect"
 
         reconfigure_schema = vol.Schema(
             {
@@ -157,9 +257,14 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
         reauth_entry = self._get_reauth_entry()
 
         if user_input is not None:
-            errors = await self._async_validate_input({**reauth_entry.data, **user_input})
-            if not errors:
+            errors, info = await self._async_validate_input({**reauth_entry.data, **user_input})
+            if not errors and info is not None:
+                stored = reauth_entry.data.get(CONF_SERIAL)
+                if stored and stored != info.serial_number:
+                    return self.async_abort(reason="wrong_device")
                 return self.async_update_reload_and_abort(reauth_entry, data_updates=user_input)
+            if not errors:
+                errors["base"] = "cannot_connect"
 
         return self.async_show_form(
             step_id="reauth_confirm",

@@ -11,11 +11,15 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.zte_h186.api import ZteH186AuthError, ZteH186ConnectionError
 from custom_components.zte_h186.const import (
     CONF_HOST,
+    CONF_MAC,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
+    CONF_SERIAL,
     CONF_USERNAME,
     DOMAIN,
 )
+
+from .conftest import MAC, SERIAL
 
 USER_INPUT = {
     CONF_HOST: "192.168.10.2",
@@ -33,8 +37,11 @@ async def test_user_flow_success(hass: HomeAssistant, mock_client) -> None:
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "ZTE H186 (192.168.10.2)"
-    assert result["data"] == USER_INPUT
+    assert result["title"] == f"ZTE H186 {SERIAL}"
+    assert result["data"] == {**USER_INPUT, CONF_SERIAL: SERIAL, CONF_MAC: MAC}
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    assert (entry.unique_id, entry.minor_version) == (SERIAL, 2)
+    mock_client.close.assert_awaited()  # the validation session is logged out again
 
 
 @pytest.mark.parametrize(

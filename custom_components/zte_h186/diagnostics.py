@@ -8,10 +8,10 @@ from typing import Any
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from .const import CONF_HOST, CONF_MAC, CONF_PASSWORD, CONF_SERIAL, CONF_USERNAME
 from .coordinator import ZteH186ConfigEntry
 
-TO_REDACT = {CONF_PASSWORD, CONF_USERNAME, CONF_HOST}
+TO_REDACT = {CONF_PASSWORD, CONF_USERNAME, CONF_HOST, CONF_SERIAL, CONF_MAC, "unique_id", "title"}
 
 
 async def async_get_config_entry_diagnostics(

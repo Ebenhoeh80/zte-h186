@@ -5,6 +5,27 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-11-20
+
+### Changed
+- **The modem is identified by its serial number, not by its address.** The entry's unique id, its title
+  (`ZTE H186 <serial>`), the device and the entities' unique ids now use the serial number that the modem reports
+  about itself. Before, the address (older installations) or the id of the config entry identified them. Existing
+  entries are migrated at the next start without losing entities, history, areas or names; a title you chose stays.
+  See [`docs/IDENTITY.md`](docs/IDENTITY.md).
+- **The device shows what the modem reports:** serial number, model, hardware and software version.
+- **A different modem at the saved address is not taken over:** setup, reconfigure and re-authentication
+  compare the serial number and refuse a modem that is not the one of the entry. A second entry for the same modem
+  stops with a clear message instead of creating every device twice.
+- **DHCP discovery:** a known modem that got a new address is followed (recognised by its hardware address); a
+  new H186 is offered under *Discovered*.
+
+### Fixed
+- **The integration logs off from the modem.** The modem allows one admin session at a time, and versions up to
+  1.4.1 never logged off, so after a reload, a restart or a setup dialog the next login was refused for some
+  minutes and a re-authentication was started that was not needed. The client now logs off when it is closed, after
+  a failed setup and before a dialog checks a running entry.
+
 ## [1.4.1] - 2026-11-20
 
 ### Changed

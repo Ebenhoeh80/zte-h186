@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.zte_h186.api import ZteH186Data
+from custom_components.zte_h186.api import ZteH186Data, ZteH186DeviceInfo
 from custom_components.zte_h186.const import (
     CONF_HOST,
     CONF_PASSWORD,
@@ -16,6 +16,23 @@ from custom_components.zte_h186.const import (
     CONF_USERNAME,
     DOMAIN,
 )
+
+SERIAL = "ZTE0123456789A42"
+MAC = "dc:f8:b9:00:11:22"
+
+
+@pytest.fixture
+def device_info() -> ZteH186DeviceInfo:
+    """What the modem reports about itself (serial number and MAC address are made up)."""
+    return ZteH186DeviceInfo(
+        serial_number=SERIAL,
+        mac_address=MAC,
+        model="H186",
+        hardware_version="V1.0.0",
+        software_version="V1.0.0TY.1T2",
+        boot_version="V1.0.0",
+        dsl_version="8B1017_8B0701",
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -99,7 +116,7 @@ def dsl_data_down() -> ZteH186Data:
 
 
 @pytest.fixture
-def mock_client(dsl_data_up: ZteH186Data) -> Generator[AsyncMock]:
+def mock_client(dsl_data_up: ZteH186Data, device_info: ZteH186DeviceInfo) -> Generator[AsyncMock]:
     """Patch ZteH186ApiClient so __init__ and config_flow use a mocked modem."""
     with (
         patch("custom_components.zte_h186.ZteH186ApiClient", autospec=True) as init_client,
@@ -111,6 +128,9 @@ def mock_client(dsl_data_up: ZteH186Data) -> Generator[AsyncMock]:
         client = init_client.return_value
         client.async_login = AsyncMock()
         client.async_get_dsl_stats = AsyncMock(return_value=dsl_data_up)
+        client.async_get_device_info = AsyncMock(return_value=device_info)
+        client.async_logout = AsyncMock()
+        init_client.async_probe_model = AsyncMock(return_value="H186")
         client.close = AsyncMock()
         client.base_url = "http://192.168.10.2"
         yield client

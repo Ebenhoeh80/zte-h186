@@ -16,6 +16,7 @@ from .api import (
     ZteH186AuthError,
     ZteH186ConnectionError,
     ZteH186Data,
+    ZteH186DeviceInfo,
     ZteH186Error,
 )
 from .const import CONF_HOST, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -39,6 +40,8 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
         """Initialize coordinator."""
         self.client = client
         self.config_entry = config_entry
+        # What the modem reports about itself; read once per setup (``None`` while unknown).
+        self.device_info: ZteH186DeviceInfo | None = None
 
         scan_interval = config_entry.options.get(
             CONF_SCAN_INTERVAL,

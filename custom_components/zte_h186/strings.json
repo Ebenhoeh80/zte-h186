@@ -1,5 +1,6 @@
 {
   "config": {
+  "flow_title": "{name}",
     "step": {
       "user": {
         "title": "Connect to ZTE H186 Modem",
@@ -41,7 +42,9 @@
     "abort": {
       "already_configured": "This ZTE H186 modem is already configured.",
       "reconfigure_successful": "Reconfiguration was successful.",
-      "reauth_successful": "Re-authentication was successful."
+      "reauth_successful": "Re-authentication was successful.",
+      "wrong_device": "This is not the modem that was set up. Check the address, or remove the entry and add the modem again.",
+      "not_supported": "The device did not answer as a ZTE H186 modem."
     }
   },
   "options": {
@@ -115,6 +118,12 @@
     },
     "protocol_error": {
       "message": "The ZTE H186 modem returned an unexpected response: {error}"
+    },
+    "wrong_modem": {
+      "message": "The modem at the saved address is a different one (serial number ending {found}, expected {expected}). Its data is not mixed into this entry. Check the address or reconfigure the entry."
+    },
+    "duplicate_modem": {
+      "message": "This modem is already managed by the entry \"{title}\". Remove this duplicate entry."
     }
   }
 }
