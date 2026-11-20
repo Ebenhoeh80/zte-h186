@@ -40,7 +40,7 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
-from .identity import is_generated_title, modem_title, same_host
+from .identity import modem_title, same_host
 
 if TYPE_CHECKING:
     from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
@@ -215,18 +215,17 @@ class ZteH186ConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
                 if other is not None and other.entry_id != entry.entry_id:
                     return self.async_abort(reason="already_configured")
-                updates: dict[str, Any] = {
-                    **user_input,
-                    CONF_SERIAL: info.serial_number,
-                    **({CONF_MAC: info.mac_address} if info.mac_address else {}),
-                }
+                if not stored:
+                    # An entry of an older version keeps its old identity here: the registries
+                    # still carry the old address, which the setup needs to find them. The setup
+                    # that follows the reload reads the serial number and completes the migration.
+                    return self.async_update_reload_and_abort(entry, data_updates=user_input)
                 return self.async_update_reload_and_abort(
                     entry,
-                    unique_id=info.serial_number,
-                    title=modem_title(info.serial_number)
-                    if is_generated_title(entry.title)
-                    else entry.title,
-                    data_updates=updates,
+                    data_updates={
+                        **user_input,
+                        **({CONF_MAC: info.mac_address} if info.mac_address else {}),
+                    },
                 )
             if not errors:
                 errors["base"] = "cannot_connect"
