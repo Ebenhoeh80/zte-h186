@@ -43,7 +43,7 @@ def same_host(first: str, second: str) -> bool:
 
 def modem_title(serial: str) -> str:
     """Return the title of the config entry of the modem with this serial number."""
-    return f"{TITLE_PREFIX} {serial}"
+    return f"{TITLE_PREFIX} ({serial})"
 
 
 def is_generated_title(title: str) -> bool:

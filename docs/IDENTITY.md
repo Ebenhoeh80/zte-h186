@@ -9,7 +9,7 @@ what was found about the modem itself.
 | Thing | Identity | Stable? |
 |---|---|---|
 | Config entry (`unique_id`) | serial number of the modem (15 characters, read from the modem) | yes, printed on the device |
-| Title in the integration list | `ZTE H186 <serial>` (a name chosen by the user is kept) | yes |
+| Title in the integration list | `ZTE H186 (<serial>)` (a name chosen by the user is kept) | yes |
 | Device in the device registry | identifier `(zte_h186, <serial>)`, with serial number, model, hardware and software version | yes |
 | Entities | unique id `<serial>_<key>` | yes |
 | Hardware address (MAC) | stored in `data["mac_address"]`, used only to recognise the modem in DHCP discovery | yes |

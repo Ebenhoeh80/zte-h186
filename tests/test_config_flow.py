@@ -37,7 +37,7 @@ async def test_user_flow_success(hass: HomeAssistant, mock_client) -> None:
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == f"ZTE H186 {SERIAL}"
+    assert result["title"] == f"ZTE H186 ({SERIAL})"
     assert result["data"] == {**USER_INPUT, CONF_SERIAL: SERIAL, CONF_MAC: MAC}
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     assert (entry.unique_id, entry.minor_version) == (SERIAL, 2)

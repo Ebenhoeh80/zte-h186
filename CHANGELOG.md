@@ -5,6 +5,12 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-11-20
+
+### Changed
+- **The entry title shows the serial number in parentheses:** "ZTE H186 (ZTEE09RKCA00542)". An entry with a
+  generated title is renamed at the next start; a title you chose stays.
+
 ## [1.5.0] - 2026-11-20
 
 ### Changed

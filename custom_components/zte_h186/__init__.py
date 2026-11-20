@@ -131,6 +131,8 @@ async def _async_ensure_identity(
         or entry.unique_id != serial
         or stored != serial
         or entry.data.get(CONF_MAC) != info.mac_address
+        # a title the integration generated in an older form is brought to the current one
+        or (is_generated_title(entry.title) and entry.title != modem_title(serial))
     ):
         hass.config_entries.async_update_entry(
             entry,
