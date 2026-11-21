@@ -14,12 +14,15 @@ from custom_components.zte_h186.api import ZteH186AuthError, ZteH186ConnectionEr
 from custom_components.zte_h186.const import CONF_RELEASE_SESSION, CONF_SCAN_INTERVAL
 
 
-def _with_release_session(mock_config_entry: MockConfigEntry, *, enabled: bool) -> None:
-    """Set the option on the fixture entry (the entry is not yet added to hass)."""
-    mock_config_entry.options = {
-        **mock_config_entry.options,
-        CONF_RELEASE_SESSION: enabled,
-    }
+def _with_release_session(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, *, enabled: bool
+) -> None:
+    """Add the fixture entry to hass with the option set (options change via the registry)."""
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={**mock_config_entry.options, CONF_RELEASE_SESSION: enabled},
+    )
 
 
 async def test_release_session_is_off_by_default(
@@ -43,8 +46,7 @@ async def test_release_session_logs_off_after_each_successful_poll(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
 ) -> None:
     """With the option on, one successful poll logs off exactly once."""
-    _with_release_session(mock_config_entry, enabled=True)
-    mock_config_entry.add_to_hass(hass)
+    _with_release_session(hass, mock_config_entry, enabled=True)
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     mock_client.async_logout.reset_mock()
@@ -61,9 +63,8 @@ async def test_failing_logout_does_not_fail_the_poll(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
 ) -> None:
     """An exception from the log-off is only logged; the entities stay available."""
-    _with_release_session(mock_config_entry, enabled=True)
+    _with_release_session(hass, mock_config_entry, enabled=True)
     mock_client.async_logout.side_effect = RuntimeError("log-off broke")
-    mock_config_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
@@ -85,8 +86,7 @@ async def test_connection_error_does_not_log_off(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
 ) -> None:
     """A connection error is not a session problem to release: no log-off is sent."""
-    _with_release_session(mock_config_entry, enabled=True)
-    mock_config_entry.add_to_hass(hass)
+    _with_release_session(hass, mock_config_entry, enabled=True)
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     mock_client.async_logout.reset_mock()
@@ -105,8 +105,7 @@ async def test_auth_error_does_not_log_off(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
 ) -> None:
     """A refused login is not released either (the session belongs to someone else)."""
-    _with_release_session(mock_config_entry, enabled=True)
-    mock_config_entry.add_to_hass(hass)
+    _with_release_session(hass, mock_config_entry, enabled=True)
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     mock_client.async_logout.reset_mock()
