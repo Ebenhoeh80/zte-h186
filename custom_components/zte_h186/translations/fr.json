@@ -52,9 +52,10 @@
     "step": {
       "init": {
         "title": "Options ZTE H186",
-        "description": "Configurez l'intervalle d'actualisation des statistiques de ligne DSL.",
+        "description": "Configurez l'intervalle d'actualisation des statistiques de ligne DSL. Le modem n'autorise qu'une seule session d'administration. Lorsque cette option est activée, Home Assistant se déconnecte du modem après chaque mise à jour, afin que vous puissiez ouvrir à tout moment son interface web. Cela représente environ six requêtes par mise à jour au lieu d'une ; utilisez donc un intervalle d'actualisation de 120 secondes ou plus.",
         "data": {
-          "scan_interval": "Intervalle d'actualisation (secondes)"
+          "scan_interval": "Intervalle d'actualisation (secondes)",
+          "release_session": "Libérer la session du modem après chaque mise à jour"
         }
       }
     }

@@ -52,9 +52,10 @@
     "step": {
       "init": {
         "title": "ZTE H186 Options",
-        "description": "Configure the polling interval for DSL line statistics.",
+        "description": "Configure the polling interval for DSL line statistics. The modem allows only one admin session. When this is on, Home Assistant logs off after every update so you can open the modem's web interface at any time. It costs about six requests per update instead of one, so use an update interval of 120 seconds or more.",
         "data": {
-          "scan_interval": "Update Interval (seconds)"
+          "scan_interval": "Update Interval (seconds)",
+          "release_session": "Release the modem session after each update"
         }
       }
     }

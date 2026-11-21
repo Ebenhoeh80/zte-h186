@@ -11,6 +11,8 @@ CONF_HOST: Final = "host"
 CONF_USERNAME: Final = "username"
 CONF_PASSWORD: Final = "password"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
+# Option: log off from the modem after each update, so its single admin session is free.
+CONF_RELEASE_SESSION: Final = "release_session"
 # Identity of the physical modem, read from the modem itself (see docs/IDENTITY.md).
 CONF_SERIAL: Final = "serial_number"
 CONF_MAC: Final = "mac_address"
@@ -23,6 +25,7 @@ DEFAULT_USERNAME: Final = "admin"
 DEFAULT_SCAN_INTERVAL: Final = 60  # seconds
 MIN_SCAN_INTERVAL: Final = 15  # seconds
 MAX_SCAN_INTERVAL: Final = 600  # seconds
+DEFAULT_RELEASE_SESSION: Final = False
 
 # Normalized DSL line status (fixed enum option set for the status sensor).
 # The raw modem value is kept verbatim in ZteH186Data.dsl_status; only the
