@@ -18,6 +18,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -36,10 +37,12 @@ from .const import (
     CONF_HOST,
     CONF_MAC,
     CONF_PASSWORD,
+    CONF_RELEASE_SESSION,
     CONF_SCAN_INTERVAL,
     CONF_SERIAL,
     CONF_USERNAME,
     CONFIG_ENTRY_MINOR_VERSION,
+    DEFAULT_RELEASE_SESSION,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_USERNAME,
     DOMAIN,
@@ -326,6 +329,9 @@ class ZteH186OptionsFlowHandler(OptionsFlowWithReload):
             CONF_SCAN_INTERVAL,
             self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         )
+        current_release_session = self.config_entry.options.get(
+            CONF_RELEASE_SESSION, DEFAULT_RELEASE_SESSION
+        )
 
         options_schema = vol.Schema(
             {
@@ -336,6 +342,10 @@ class ZteH186OptionsFlowHandler(OptionsFlowWithReload):
                     cv.positive_int,
                     vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
                 ),
+                vol.Optional(
+                    CONF_RELEASE_SESSION,
+                    default=current_release_session,
+                ): BooleanSelector(),
             }
         )
 
