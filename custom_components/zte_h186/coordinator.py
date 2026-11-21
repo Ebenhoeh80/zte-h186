@@ -19,7 +19,14 @@ from .api import (
     ZteH186DeviceInfo,
     ZteH186Error,
 )
-from .const import CONF_HOST, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import (
+    CONF_HOST,
+    CONF_RELEASE_SESSION,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_RELEASE_SESSION,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -63,6 +70,9 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
     async def _async_update_data(self) -> ZteH186Data:
         """Fetch data from ZTE H186."""
         host = self.config_entry.data[CONF_HOST]
+        release_session = self.config_entry.options.get(
+            CONF_RELEASE_SESSION, DEFAULT_RELEASE_SESSION
+        )
         try:
             async with asyncio.timeout(30):
                 data = await self.client.async_get_dsl_stats()
@@ -99,10 +109,22 @@ class ZteH186DataUpdateCoordinator(DataUpdateCoordinator[ZteH186Data]):
             ) from err
         except ZteH186Error as err:
             self._auth_failures = 0
+            if release_session:
+                # A protocol error usually leaves the admin session active; release it.
+                await self._async_release_session()
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="protocol_error",
                 translation_placeholders={"error": str(err)},
             ) from err
         self._auth_failures = 0
+        if release_session:
+            await self._async_release_session()
         return data
+
+    async def _async_release_session(self) -> None:
+        """Log off from the modem so that its admin session is free (never fails the update)."""
+        try:
+            await self.client.async_logout()
+        except Exception as err:
+            _LOGGER.debug("Releasing the modem session failed: %s", err)
