@@ -60,6 +60,13 @@ Una integración personalizada asíncrona para el **módem DSL ZTE H186**. Lee t
 
 > 💡 **Cableado de hardware**: Consulte la [Guía de cableado y administración local](docs/es/HomeAssistant.md#cableado-de-hardware-y-administración-local-del-módem).
 
+### Opciones
+
+En el diálogo **Configurar** de la integración puede cambiar:
+
+- **Intervalo de actualización (segundos)**: cada cuánto se consulta el módem, de 15 a 600 segundos (predeterminado: 60).
+- **Liberar la sesión del módem después de cada actualización** (predeterminado: desactivado): el módem solo permite una sesión de administrador. Con esta opción activada, Home Assistant cierra la sesión en el módem después de cada actualización para que pueda abrir su interfaz web en cualquier momento. Cuesta unas seis solicitudes por actualización en lugar de una, así que use un intervalo de actualización de 120 segundos o más.
+
 ---
 
 ## 🗺️ Hoja de ruta e ideas

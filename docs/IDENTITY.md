@@ -38,6 +38,11 @@ some minutes and Home Assistant started a re-authentication that was not needed.
 (`POST /` with `IF_LogOff=1`, the request of the web UI's logout link) when it is closed, after a failed setup and
 before a dialog checks a running entry, and when Home Assistant stops (stopping does not unload the entries).
 
+Since 1.7.0 the option `release_session` (off by default) also logs the client off after every successful
+update, and after a protocol error, so the web UI can be opened at any time. The client logs in again at the
+next poll; the cost is about six requests per update instead of one. Authentication, connection and timeout
+errors do not trigger a log-off.
+
 ## Rules in the code
 
 1. **A new entry takes the serial number from the modem.** The dialog logs in, reads the device information and

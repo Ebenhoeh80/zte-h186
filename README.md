@@ -78,6 +78,13 @@ An asynchronous Home Assistant custom integration for the **ZTE H186 DSL Modem**
 
 > 💡 **Hardware Wiring & Setup**: For a comprehensive guide on physical port cabling (Red WAN, Yellow LAN, Grey DSL), disabling the modem's internal DHCP server, and assigning a static management IP, see the [Cabling & Local Management Guide](docs/HomeAssistant.md#verkabelung-und-lokale-verwaltung-des-modems).
 
+### Options
+
+Open the integration's **Configure** dialog to change:
+
+- **Update Interval (seconds)**: how often the modem is polled, from 15 to 600 seconds (default 60).
+- **Release the modem session after each update** (default: off): the modem allows only one admin session. When this is on, Home Assistant logs off after every update so you can open the modem's web interface at any time. It costs about six requests per update instead of one, so use an update interval of 120 seconds or more.
+
 ---
 
 ## 📊 Entity Directory
@@ -166,7 +173,7 @@ Long-term `sync rate`, `SNR margin` and `CRC/FEC error` sensors also feed nicely
 
 ## ⚠️ Known Limitations
 
-- **One modem per config entry.** The H186 web firmware allows only a single admin web session, so running a second client (e.g. a browser logged into the modem) at the same time can invalidate the integration's session until the next poll re-authenticates.
+- **One modem per config entry.** The H186 web firmware allows only a single admin web session, so running a second client (e.g. a browser logged into the modem) at the same time can invalidate the integration's session until the next poll re-authenticates. With the option **Release the modem session after each update** (see Options) the integration logs off after every update, so the web interface is free in between.
 - **Login lockout.** The firmware temporarily locks the admin account after repeated failed logins (`DisplayLockTime`). Avoid rapid credential changes.
 - **Fields only populate in Showtime.** While the line is down or training, the modem omits most metrics; those sensors report `unknown` until the line is back up.
 - **Read-only.** Modem settings cannot be changed through this integration by design.

@@ -5,6 +5,14 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-11-21
+
+### Added
+- **Option "Release the modem session after each update"** (`release_session`, off by default). The modem
+  allows only one admin session; with the option on, the integration logs off after every successful update
+  (and after a protocol error), so the modem's web interface can be opened at any time. Cost: about six
+  requests per update instead of one, so an update interval of 120 seconds or more is recommended.
+
 ## [1.6.0] - 2026-11-21
 
 ### Added

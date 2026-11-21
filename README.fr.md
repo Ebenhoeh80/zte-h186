@@ -60,6 +60,13 @@ Une intégration personnalisée asynchrone pour le **modem DSL ZTE H186**. Lit l
 
 > 💡 **Câblage physique** : Consultez le [Guide de câblage et de gestion locale](docs/fr/HomeAssistant.md#câblage-et-gestion-locale-du-modem).
 
+### Options
+
+Dans la boîte de dialogue **Configurer** de l'intégration, vous pouvez modifier :
+
+- **Intervalle d'actualisation (secondes)** : fréquence d'interrogation du modem, de 15 à 600 secondes (par défaut : 60).
+- **Libérer la session du modem après chaque mise à jour** (par défaut : désactivé) : le modem n'autorise qu'une seule session d'administration. Lorsque cette option est activée, Home Assistant se déconnecte du modem après chaque mise à jour, afin que vous puissiez ouvrir à tout moment son interface web. Cela représente environ six requêtes par mise à jour au lieu d'une ; utilisez donc un intervalle d'actualisation de 120 secondes ou plus.
+
 ---
 
 ## 🗺️ Feuille de route et idées

@@ -77,6 +77,13 @@ Eine native, asynchrone Home Assistant Custom Integration für das **ZTE H186 DS
 
 > 💡 **Hardware-Verkabelung & Netzwerk**: Für eine umfassende Anleitung zur physischen Port-Verkabelung (Rot WAN, Gelb LAN, Grau DSL), Deaktivierung des integrierten DHCP-Servers und Zuweisung einer statischen IP siehe die [Verkabelungs- und Managementanleitung](docs/de/HomeAssistant.md#verkabelung-und-lokale-verwaltung-des-modems).
 
+### Optionen
+
+Über den Dialog **Konfigurieren** der Integration lässt sich einstellen:
+
+- **Aktualisierungsintervall (Sekunden)**: wie oft das Modem abgefragt wird, von 15 bis 600 Sekunden (Standard 60).
+- **Modem-Sitzung nach jeder Aktualisierung freigeben** (Standard: aus): Das Modem erlaubt nur eine Admin-Sitzung. Ist die Option an, meldet sich Home Assistant nach jeder Aktualisierung vom Modem ab, damit du die Weboberfläche des Modems jederzeit öffnen kannst. Das kostet pro Aktualisierung etwa sechs statt einer Anfrage, daher ein Aktualisierungsintervall von 120 Sekunden oder mehr verwenden.
+
 ---
 
 ## 🌐 Internationalisierung (i18n)
