@@ -52,9 +52,10 @@
     "step": {
       "init": {
         "title": "Opciones de ZTE H186",
-        "description": "Configure el intervalo de actualización de las estadísticas de la línea DSL.",
+        "description": "Configure el intervalo de actualización de las estadísticas de la línea DSL. El módem solo permite una sesión de administrador. Con esta opción activada, Home Assistant cierra la sesión en el módem después de cada actualización para que pueda abrir su interfaz web en cualquier momento. Cuesta unas seis solicitudes por actualización en lugar de una, así que use un intervalo de actualización de 120 segundos o más.",
         "data": {
-          "scan_interval": "Intervalo de actualización (segundos)"
+          "scan_interval": "Intervalo de actualización (segundos)",
+          "release_session": "Liberar la sesión del módem después de cada actualización"
         }
       }
     }

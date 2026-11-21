@@ -52,9 +52,10 @@
     "step": {
       "init": {
         "title": "ZTE H186 Optionen",
-        "description": "Abfrageintervall für DSL-Leitungsstatistiken anpassen.",
+        "description": "Abfrageintervall für DSL-Leitungsstatistiken anpassen. Das Modem erlaubt nur eine Admin-Sitzung. Ist diese Option an, meldet sich Home Assistant nach jeder Aktualisierung vom Modem ab, damit du die Weboberfläche des Modems jederzeit öffnen kannst. Das kostet pro Aktualisierung etwa sechs statt einer Anfrage, daher ein Aktualisierungsintervall von 120 Sekunden oder mehr verwenden.",
         "data": {
-          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+          "scan_interval": "Aktualisierungsintervall (Sekunden)",
+          "release_session": "Modem-Sitzung nach jeder Aktualisierung freigeben"
         }
       }
     }
