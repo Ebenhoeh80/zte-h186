@@ -43,3 +43,19 @@ def test_release_checklist_covers_every_version_source() -> None:
     for source in collect_versions(ROOT):
         assert source.split(" (")[0] in checklist, f"RELEASING.md omits {source}"
     assert "[Unreleased]" in _text("CHANGELOG.md")
+
+
+_ROADMAP = re.compile(r"^## 🗺️.*?$(.*?)(^---|\Z)", re.MULTILINE | re.DOTALL)
+
+
+def _roadmap_items(name: str) -> list[str]:
+    match = _ROADMAP.search(_text(name))
+    assert match is not None, f"{name} has no roadmap section"
+    return [line for line in match.group(1).splitlines() if line.startswith(("- 💡", "- 🔜"))]
+
+
+def test_all_readmes_have_the_same_roadmap() -> None:
+    english = _roadmap_items("README.md")
+    assert len(english) == 1
+    for name in ("README.de.md", "README.fr.md", "README.es.md"):
+        assert len(_roadmap_items(name)) == len(english), f"{name} has a stale roadmap"

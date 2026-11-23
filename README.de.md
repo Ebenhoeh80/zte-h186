@@ -106,8 +106,6 @@ Die Übersetzungen gelten automatisch für:
 
 Geplant und in Prüfung — **gib dem ein 👍, was dir wichtig ist**, und bring eigene Ideen ein:
 
-- 🔜 Diagnose ohne die Modem-Adresse in Fehlermeldungen
-- 💡 Statische Typprüfung (mypy) in der CI
 - 💡 Reparatur-Hinweis, wenn das Modem nicht erreichbar ist
 
 ➡️ Alle Ideen & Abstimmung: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**
