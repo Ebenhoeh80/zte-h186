@@ -431,6 +431,10 @@ class ZteH186ApiClient:
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
         try:
             async with session.get(token_url, headers={"Referer": root_url}) as resp:
+                if resp.status != 200:
+                    raise ZteH186ConnectionError(
+                        f"Login token endpoint returned HTTP {resp.status}"
+                    )
                 token_resp = await _read_text(resp, MAX_TOKEN_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(f"Failed to fetch login token: {err}") from err
