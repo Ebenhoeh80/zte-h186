@@ -500,7 +500,9 @@ class ZteH186ApiClient:
             "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
         }
         try:
-            async with session.get(status_url, headers=status_headers) as resp:
+            async with session.get(
+                status_url, headers=status_headers, allow_redirects=False
+            ) as resp:
                 status_page_html = await _read_text(resp, MAX_PAGE_BYTES)
                 authorized = (
                     resp.status == 200 and "internet_dsl_interface_lua.lua" in status_page_html
@@ -573,7 +575,9 @@ class ZteH186ApiClient:
         cookie = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
         endpoint = f"{self._base_url}{DEVICE_INFO_PATH}?_={int(time.time() * 1000)}"
         try:
-            async with session.get(status_url, headers={"Cookie": cookie}) as page:
+            async with session.get(
+                status_url, headers={"Cookie": cookie}, allow_redirects=False
+            ) as page:
                 await _read_text(page, MAX_PAGE_BYTES)
             async with session.get(
                 endpoint,
@@ -583,6 +587,7 @@ class ZteH186ApiClient:
                     "Referer": status_url,
                     "Cookie": cookie,
                 },
+                allow_redirects=False,
             ) as resp:
                 text = await _read_text(resp, MAX_XML_BYTES)
                 if resp.status != 200 or "SessionTimeout" in text:
@@ -633,7 +638,7 @@ class ZteH186ApiClient:
             }
 
             try:
-                async with session.get(endpoint, headers=headers) as resp:
+                async with session.get(endpoint, headers=headers, allow_redirects=False) as resp:
                     response_text = await _read_text(resp, MAX_XML_BYTES)
                     if resp.status != 200 or "SessionTimeout" in response_text:
                         _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
@@ -641,7 +646,9 @@ class ZteH186ApiClient:
                         self._sid = None
                         await self._async_login_internal(session)
                         headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
-                        async with session.get(endpoint, headers=headers) as retry_resp:
+                        async with session.get(
+                            endpoint, headers=headers, allow_redirects=False
+                        ) as retry_resp:
                             response_text = await _read_text(retry_resp, MAX_XML_BYTES)
                             if retry_resp.status != 200:
                                 raise ZteH186ProtocolError(
