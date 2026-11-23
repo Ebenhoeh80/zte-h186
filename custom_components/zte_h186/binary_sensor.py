@@ -15,8 +15,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .api import ZteH186Data
+from .const import DSL_STATUS_CONNECTED
 from .coordinator import ZteH186ConfigEntry
 from .entity import ZteH186Entity
+from .sensor import _normalize_dsl_status
 
 PARALLEL_UPDATES = 0
 
@@ -34,8 +36,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[ZteH186BinarySensorEntityDescription, ...] = (
         translation_key="dsl_link",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         is_on_fn=lambda data: bool(
-            data.dsl_status
-            and data.dsl_status.lower() in ("up", "connected", "showtime")
+            _normalize_dsl_status(data.dsl_status) == DSL_STATUS_CONNECTED
             and (data.downstream_sync or 0) > 0
         ),
     ),

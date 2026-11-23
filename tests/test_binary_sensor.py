@@ -84,6 +84,26 @@ async def test_link_follows_the_state_of_the_synthetic_answers(
     assert _state(hass, "dsl_link") == link
 
 
+@pytest.mark.parametrize("raw", ["Show Time", "show-time", "Connected "])
+async def test_link_agrees_with_the_normalised_status_sensor(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_client,
+    dsl_data_up: ZteH186Data,
+    raw: str,
+) -> None:
+    """Both entities must report a connected line for the same raw modem status."""
+    mock_client.async_get_dsl_stats.return_value = replace(dsl_data_up, dsl_status=raw)
+    await _setup(hass, mock_config_entry)
+
+    status_id = er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{SERIAL}_dsl_status")
+    assert status_id is not None
+    status = hass.states.get(status_id)
+    assert status is not None
+    assert status.state == "connected"
+    assert _state(hass, "dsl_link") == STATE_ON
+
+
 async def test_binary_sensors_become_unavailable_when_the_modem_is_unreachable(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_client
 ) -> None:

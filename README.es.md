@@ -73,8 +73,6 @@ En el diálogo **Configurar** de la integración puede cambiar:
 
 Planificado y en estudio — **dale un 👍 a lo que te importe** y aporta tus propias ideas:
 
-- 🔜 Diagnóstico sin la dirección del módem en los mensajes de error
-- 💡 Comprobación estática de tipos (mypy) en la CI
 - 💡 Aviso de reparación cuando el módem no es accesible
 
 ➡️ Todas las ideas y votación: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**

@@ -73,8 +73,6 @@ Dans la boîte de dialogue **Configurer** de l'intégration, vous pouvez modifie
 
 Prévu et à l'étude — **mettez un 👍 sur ce qui compte pour vous** et proposez vos idées :
 
-- 🔜 Diagnostic sans l'adresse du modem dans les messages d'erreur
-- 💡 Vérification statique des types (mypy) dans la CI
 - 💡 Notification de réparation lorsque le modem est injoignable
 
 ➡️ Toutes les idées et le vote: **[Discussions → Ideas](https://github.com/Ebenhoeh80/zte-h186/discussions/categories/ideas)**

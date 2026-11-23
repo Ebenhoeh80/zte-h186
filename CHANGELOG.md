@@ -5,6 +5,32 @@ All notable changes to the ZTE H186 Home Assistant Integration will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.7.1] - 2026-11-23
+
+### Fixed
+- **The session id can no longer leave the modem.** All requests carrying the admin `SID` cookie now
+  set `allow_redirects=False`, so a redirect cannot forward the cookie to another host. An expired
+  session is also detected reliably instead of being reported as a protocol error.
+- **A session that stays expired after re-login now starts reauthentication** instead of leaving the
+  entities permanently unavailable with a protocol error.
+- **A failing login-token endpoint is reported as a connection problem.** An error page is no longer
+  read as a numeric challenge (e.g. `404`), which previously produced a wrong password hash and a
+  misleading "check username and password" message.
+- **Mixed-case URL schemes are accepted properly.** `HTTP://192.168.10.2` no longer becomes
+  `http://HTTP://192.168.10.2` and keeps failing with `cannot_connect`.
+- **`dsl_link` agrees with `dsl_status`.** Raw values such as `Show Time`, `show-time` or
+  `Connected ` are normalised the same way in both entities, so automations trigger correctly.
+- **A title chosen by the user is kept.** `ZTE H186 (Wohnzimmer)` is no longer mistaken for a
+  generated title and overwritten with the serial number on the next setup.
+
+### Changed
+- Release documentation is consistent again: the security policy names the supported release, the
+  manual installation names the actual `zte_h186.zip` asset, the release checklist covers all six
+  version sources, and the translated roadmaps no longer advertise shipped features. Four plus one
+  automated checks guard these files.
+
 ## [1.7.0] - 2026-11-21
 
 ### Added

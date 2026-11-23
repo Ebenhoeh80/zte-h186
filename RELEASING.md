@@ -9,7 +9,9 @@ feature the minor version, a fix the patch version.
 1. Check that everything meant for the release is merged to `main` and CI is green.
 2. In `CHANGELOG.md`, rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD` and start a new empty
    `[Unreleased]` section above it. The section's text becomes the release notes.
-3. Set the new version in `custom_components/zte_h186/manifest.json`, `package.json` and the first two `version` lines of `package-lock.json`.
+3. Set the new version in `custom_components/zte_h186/manifest.json`, `package.json`, `pyproject.toml`
+   and both `version` lines of `package-lock.json`. Then run `python scripts/check_versions.py` —
+   all six sources must agree.
 
 ## 2. Check locally
 

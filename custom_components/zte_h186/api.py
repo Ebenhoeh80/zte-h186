@@ -289,8 +289,10 @@ class ZteH186ApiClient:
     def _format_base_url(host: str) -> str:
         """Format base URL, handling IPv6 bracket enclosure and scheme."""
         clean_host = host.rstrip("/")
-        if clean_host.startswith(("http://", "https://")):
-            return clean_host
+        if clean_host.lower().startswith(("http://", "https://")):
+            # Validation accepts any case in the scheme; aiohttp needs it lower-case.
+            scheme, rest = clean_host.split("://", 1)
+            return f"{scheme.lower()}://{rest}"
 
         try:
             addr = ipaddress.ip_address(clean_host)
@@ -431,6 +433,10 @@ class ZteH186ApiClient:
         token_url = f"{self._base_url}/function_module/login_module/login_page/logintoken_lua.lua"
         try:
             async with session.get(token_url, headers={"Referer": root_url}) as resp:
+                if resp.status != 200:
+                    raise ZteH186ConnectionError(
+                        f"Login token endpoint returned HTTP {resp.status}"
+                    )
                 token_resp = await _read_text(resp, MAX_TOKEN_BYTES)
         except (TimeoutError, aiohttp.ClientError) as err:
             raise ZteH186ConnectionError(f"Failed to fetch login token: {err}") from err
@@ -500,7 +506,9 @@ class ZteH186ApiClient:
             "Cookie": f"SID={self._sid}; _TESTCOOKIESUPPORT=1",
         }
         try:
-            async with session.get(status_url, headers=status_headers) as resp:
+            async with session.get(
+                status_url, headers=status_headers, allow_redirects=False
+            ) as resp:
                 status_page_html = await _read_text(resp, MAX_PAGE_BYTES)
                 authorized = (
                     resp.status == 200 and "internet_dsl_interface_lua.lua" in status_page_html
@@ -573,7 +581,9 @@ class ZteH186ApiClient:
         cookie = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
         endpoint = f"{self._base_url}{DEVICE_INFO_PATH}?_={int(time.time() * 1000)}"
         try:
-            async with session.get(status_url, headers={"Cookie": cookie}) as page:
+            async with session.get(
+                status_url, headers={"Cookie": cookie}, allow_redirects=False
+            ) as page:
                 await _read_text(page, MAX_PAGE_BYTES)
             async with session.get(
                 endpoint,
@@ -583,6 +593,7 @@ class ZteH186ApiClient:
                     "Referer": status_url,
                     "Cookie": cookie,
                 },
+                allow_redirects=False,
             ) as resp:
                 text = await _read_text(resp, MAX_XML_BYTES)
                 if resp.status != 200 or "SessionTimeout" in text:
@@ -633,7 +644,7 @@ class ZteH186ApiClient:
             }
 
             try:
-                async with session.get(endpoint, headers=headers) as resp:
+                async with session.get(endpoint, headers=headers, allow_redirects=False) as resp:
                     response_text = await _read_text(resp, MAX_XML_BYTES)
                     if resp.status != 200 or "SessionTimeout" in response_text:
                         _LOGGER.debug("Session expired or HTTP error, re-authenticating...")
@@ -641,12 +652,21 @@ class ZteH186ApiClient:
                         self._sid = None
                         await self._async_login_internal(session)
                         headers["Cookie"] = f"SID={self._sid}; _TESTCOOKIESUPPORT=1"
-                        async with session.get(endpoint, headers=headers) as retry_resp:
+                        async with session.get(
+                            endpoint, headers=headers, allow_redirects=False
+                        ) as retry_resp:
                             response_text = await _read_text(retry_resp, MAX_XML_BYTES)
                             if retry_resp.status != 200:
                                 raise ZteH186ProtocolError(
                                     f"DSL endpoint returned HTTP {retry_resp.status} "
                                     "after re-login."
+                                )
+                            if "SessionTimeout" in response_text:
+                                # The modem allowed a login but still considers the session
+                                # expired; this needs reauth, not a protocol-error retry.
+                                raise ZteH186AuthError(
+                                    "The modem still reports an expired session after re-login. "
+                                    "Check the username and password."
                                 )
             except (TimeoutError, aiohttp.ClientError) as err:
                 raise ZteH186ConnectionError(
