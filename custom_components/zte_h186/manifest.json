@@ -1,10 +1,10 @@
 {
   "domain": "zte_h186",
   "name": "ZTE H186 DSL Modem",
+  "categories": ["computers_network.routers_network"],
   "codeowners": [
     "@Ebenhoeh80"
   ],
-  "categories": ["computers_network.routers_network"],
   "config_flow": true,
   "dhcp": [{ "macaddress": "DCF8B9*" }],
   "documentation": "https://github.com/Ebenhoeh80/zte-h186",
