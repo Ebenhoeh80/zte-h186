@@ -6,8 +6,8 @@ Security fixes are made in the latest release.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.5.x   | :white_check_mark: |
-| < 1.5.0 | :x:                |
+| 1.7.x   | :white_check_mark: |
+| < 1.7.0 | :x:                |
 
 ## Threat model
 
