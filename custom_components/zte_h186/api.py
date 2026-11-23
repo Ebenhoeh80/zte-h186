@@ -655,6 +655,13 @@ class ZteH186ApiClient:
                                     f"DSL endpoint returned HTTP {retry_resp.status} "
                                     "after re-login."
                                 )
+                            if "SessionTimeout" in response_text:
+                                # The modem allowed a login but still considers the session
+                                # expired; this needs reauth, not a protocol-error retry.
+                                raise ZteH186AuthError(
+                                    "The modem still reports an expired session after re-login. "
+                                    "Check the username and password."
+                                )
             except (TimeoutError, aiohttp.ClientError) as err:
                 raise ZteH186ConnectionError(
                     f"Connection error requesting DSL stats: {err}"
