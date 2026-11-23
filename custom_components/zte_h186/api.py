@@ -289,8 +289,10 @@ class ZteH186ApiClient:
     def _format_base_url(host: str) -> str:
         """Format base URL, handling IPv6 bracket enclosure and scheme."""
         clean_host = host.rstrip("/")
-        if clean_host.startswith(("http://", "https://")):
-            return clean_host
+        if clean_host.lower().startswith(("http://", "https://")):
+            # Validation accepts any case in the scheme; aiohttp needs it lower-case.
+            scheme, rest = clean_host.split("://", 1)
+            return f"{scheme.lower()}://{rest}"
 
         try:
             addr = ipaddress.ip_address(clean_host)
