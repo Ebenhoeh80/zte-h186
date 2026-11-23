@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-11-23
+
+### Fixed
+- **The manifest now declares an integration category** (`computers_network.routers_network`), which
+  removes the HACS validation warning and makes the integration discoverable in the Marketplace
+  catalog. An automated check keeps the manifest compatible with the one-to-three category rule.
+
 ## [1.7.1] - 2026-11-23
 
 ### Fixed

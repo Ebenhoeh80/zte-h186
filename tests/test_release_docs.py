@@ -54,6 +54,28 @@ def _roadmap_items(name: str) -> list[str]:
     return [line for line in match.group(1).splitlines() if line.startswith(("- 💡", "- 🔜"))]
 
 
+def _manifest() -> dict[str, object]:
+    return json.loads(
+        (ROOT / "custom_components" / "zte_h186" / "manifest.json").read_text(encoding="utf-8")
+    )
+
+
+def test_manifest_keys_are_sorted() -> None:
+    """Hassfest requires domain, name, then all remaining keys alphabetically."""
+    keys = list(_manifest())
+    assert keys[:2] == ["domain", "name"]
+    assert keys[2:] == sorted(keys[2:]), "manifest keys must be alphabetical after name"
+
+
+def test_manifest_declares_integration_categories() -> None:
+    manifest = _manifest()
+    categories = manifest.get("categories")
+    assert categories, "manifest has no categories (HACS validation warns)"
+    assert 1 <= len(categories) <= 3
+    assert len(set(categories)) == len(categories), "categories must be unique"
+    assert all(isinstance(c, str) and c == c.strip() for c in categories)
+
+
 def test_all_readmes_have_the_same_roadmap() -> None:
     english = _roadmap_items("README.md")
     assert len(english) == 1
