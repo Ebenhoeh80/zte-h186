@@ -4,6 +4,7 @@
   "codeowners": [
     "@Ebenhoeh80"
   ],
+  "categories": ["computers_network.routers_network"],
   "config_flow": true,
   "dhcp": [{ "macaddress": "DCF8B9*" }],
   "documentation": "https://github.com/Ebenhoeh80/zte-h186",
@@ -12,6 +13,6 @@
   "issue_tracker": "https://github.com/Ebenhoeh80/zte-h186/issues",
   "quality_scale": "gold",
   "requirements": [],
-  "version": "1.7.1"
+  "version": "1.7.2"
 }
 
