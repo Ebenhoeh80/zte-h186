@@ -31,6 +31,7 @@ from custom_components.zte_h186.const import (
     CONF_USERNAME,
     DOMAIN,
 )
+from custom_components.zte_h186.identity import is_generated_title
 
 from .conftest import MAC, SERIAL
 
@@ -140,6 +141,18 @@ async def test_a_title_chosen_by_the_user_survives_the_migration(
     entry = _legacy(title="Modem Keller")
     await _setup(hass, entry)
     assert entry.title == "Modem Keller"
+    assert entry.unique_id == SERIAL
+
+
+@pytest.mark.parametrize("title", ["ZTE H186 (Wohnzimmer)", "ZTE H186 (Keller)"])
+async def test_a_parenthesised_user_title_is_not_overwritten(
+    hass: HomeAssistant, mock_client, title: str
+) -> None:
+    """Only the old address form is generated; a name in brackets belongs to the user."""
+    assert not is_generated_title(title)
+    entry = _legacy(title=title)
+    await _setup(hass, entry)
+    assert entry.title == title
     assert entry.unique_id == SERIAL
 
 
