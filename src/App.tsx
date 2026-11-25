@@ -8,21 +8,15 @@ import {
   Code2,
   Copy,
   Download,
-  ExternalLink,
   FileCode,
   Gauge,
-  HelpCircle,
   Layers,
-  Network,
   Play,
   RefreshCw,
-  Server,
-  Settings,
   Shield,
   Sliders,
   Terminal,
   Wifi,
-  XCircle,
   AlertTriangle
 } from 'lucide-react';
 import { DslNormalizedData, ModemStatsResponse, ProtocolStepResult } from './types/modem';
@@ -47,7 +41,7 @@ export default function App() {
   const [host, setHost] = useState<string>('192.168.10.2');
   const [username, setUsername] = useState<string>('admin');
   const [password, setPassword] = useState<string>('');
-  const [autoPoll, setAutoPoll] = useState<boolean>(true);
+  const [autoPoll] = useState<boolean>(true);
   const [pollInterval, setPollInterval] = useState<number>(10);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
