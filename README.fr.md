@@ -94,8 +94,13 @@ Copyright (C) 2026 Daniel Ebenhöh.
 
 Si elle vous fait gagner du temps ou vous évite des soucis, un petit don volontaire aide à faire vivre le projet. Chaque contribution, même modeste, est très appréciée. Merci ! 🙏
 
+Le parrainage est volontaire et ne donne droit à aucun support, fonctionnalité ni délai de réponse.
+
+<a href="https://github.com/sponsors/Ebenhoeh80">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Parrainer%20sur%20GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" height="42">
+</a>
 <a href="https://www.paypal.com/pool/9p84qTHCFr?sr=wccr">
-  <img src="https://img.shields.io/badge/Offrez-moi%20un%20caf%C3%A9-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Faire un don via PayPal" height="42">
+  <img src="https://img.shields.io/badge/%E2%9D%A4%20Faire%20un%20don%20via%20PayPal-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Faire un don via PayPal" height="42">
 </a>
 <a href="https://buymeacoffee.com/daneben">
   <img src="https://img.shields.io/badge/%E2%98%95%20Offrez-moi%20un%20caf%C3%A9-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" height="42">
