@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Stats dashboard (`server.ts`, not part of the Home Assistant integration): rate limits added (600 requests per minute in general, 20 per minute for `/api/modem/*`, since every modem request logs in and too many logins can lock the modem out). In development only `/api` is limited.
+
+### Changed
+- Removed unused imports and variables in `server.ts` and `src/App.tsx` (CodeQL notes).
+
 ## [1.7.2] - 2026-11-23
 
 ### Fixed

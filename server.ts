@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-import net from 'net';
 import { fileURLToPath } from 'url';
 import { validateModemHost } from './src/server/validateHost';
 
@@ -19,6 +19,26 @@ const isProd = process.env.NODE_ENV === 'production';
 // No CORS: the dashboard is served same-origin by this process, so cross-origin
 // access is neither needed nor desirable (it would widen the attack surface).
 app.use(express.json());
+
+// Rate limits: the dashboard is a local tool, but every modem request logs in to the modem and too
+// many logins can lock it out. The general limit also covers the static and brand routes; during
+// development only /api is limited so that Vite can load its many modules.
+const generalLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => !isProd && !req.path.startsWith('/api'),
+});
+const modemLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 'error', error: 'Too many modem requests, try again in a minute.' },
+});
+app.use(generalLimiter);
+app.use('/api/modem', modemLimiter);
 
 // Simulation state to allow realistic fluctuations in demo mode
 let simShowtimeSec = 345600; // 4 days
@@ -348,7 +368,7 @@ app.post('/api/modem/stats', async (req: Request, res: Response) => {
 
 // API: Protocol Step-by-Step test
 app.post('/api/modem/test-protocol', async (req: Request, res: Response) => {
-  const { host = '192.168.1.1', username = 'admin', password = '', simulate = true } = req.body;
+  const { host = '192.168.1.1', simulate = true } = req.body;
 
   if (simulate) {
     return res.json({
